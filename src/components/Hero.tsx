@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ArrowDown, MapPin } from 'lucide-react';
-// Твой сочный оригинальный avif-файл
 import heroLive from '../assets/hero-bg.avif';
 
 export default function Hero() {
