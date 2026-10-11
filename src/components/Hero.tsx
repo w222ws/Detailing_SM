@@ -1,118 +1,383 @@
-import React, { useState } from 'react';
-import { ArrowDown, MapPin } from 'lucide-react';
-import heroLive from '../assets/hero-bg.avif';
+import { useEffect, useRef, useState } from 'react';
+import { site } from '../config/site';
+import heroImg from '../assets/hero-bg.avif';
 
-export default function Hero() {
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+/* ==========================================================================
+   Фото за матовим склом: наче віддих на холодному вікні боксу.
+   Проводиш пальцем/курсором — скло протирається смугою, під ним чітке фото.
+   Матовість — це сама ж фотографія, тільки розмита й освітлена:
+   справжнє скло, а не намальований бруд.
+   ========================================================================== */
 
-  // 3D-наклон карточки за курсором (работает только на десктопе)
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const { left, top, width, height } =
-      e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width - 0.5) * 14;
-    const y = ((e.clientY - top) / height - 0.5) * -14;
-    setMousePos({ x, y });
-  };
+type Point = { x: number; y: number };
+type Phase = 'frosted' | 'fading' | 'done';
 
-  const handleMouseLeave = () => {
-    setMousePos({ x: 0, y: 0 });
-  };
+function GlassPhoto() {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [imgReady, setImgReady] = useState(false);
+  const [phase, setPhase] = useState<Phase>(() =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'done'
+      : 'frosted',
+  );
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const frame = frameRef.current;
+    const img = imgRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !frame || !img || !ctx || !imgReady) return;
+
+    const GX = 22;
+    const GY = 26;
+
+    let w = 0;
+    let h = 0;
+    let radius = 30;
+    let cells = new Uint8Array(0);
+    let clearedCount = 0;
+    let finished = false;
+    let hasTouched = false;
+    let down = false;
+    let last: Point | null = null;
+    let demoStarted = false;
+    let demoTimer = 0;
+    let demoFrame = 0;
+    let idleTimer = 0;
+    let doneTimer = 0;
+
+    const paintFrost = () => {
+      w = Math.round(frame.clientWidth);
+      h = Math.round(frame.clientHeight);
+      if (!w || !h) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      radius = Math.max(30, w * 0.11);
+
+      // те саме фото, тільки розмите й підсвітлене — справжня матовість скла.
+      // Кадруємо як object-cover, інакше фото тупо розтягується під рамку.
+      const iw = img.naturalWidth || w;
+      const ih = img.naturalHeight || h;
+      const boxRatio = w / h;
+      const imgRatio = iw / ih;
+      let sx = 0;
+      let sy = 0;
+      let sw = iw;
+      let sh = ih;
+      if (imgRatio > boxRatio) {
+        sw = ih * boxRatio;
+        sx = (iw - sw) / 2;
+      } else {
+        sh = iw / boxRatio;
+        sy = (ih - sh) / 2;
+      }
+
+      ctx.filter = 'blur(16px) saturate(0.85) brightness(1.22)';
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+      ctx.filter = 'none';
+
+      // легка біла поволока зверху
+      ctx.fillStyle = 'rgba(244,245,248,0.22)';
+      ctx.fillRect(0, 0, w, h);
+
+      cells = new Uint8Array(GX * GY);
+      clearedCount = 0;
+      demoStarted = false;
+    };
+
+    const markCells = (x: number, y: number) => {
+      const reach = radius * 0.8;
+      const i0 = Math.max(0, Math.floor(((x - reach) / w) * GX));
+      const i1 = Math.min(GX - 1, Math.floor(((x + reach) / w) * GX));
+      const j0 = Math.max(0, Math.floor(((y - reach) / h) * GY));
+      const j1 = Math.min(GY - 1, Math.floor(((y + reach) / h) * GY));
+      for (let j = j0; j <= j1; j++) {
+        for (let i = i0; i <= i1; i++) {
+          const idx = j * GX + i;
+          if (cells[idx] === 1) continue;
+          const cx = ((i + 0.5) / GX) * w;
+          const cy = ((j + 0.5) / GY) * h;
+          if ((cx - x) ** 2 + (cy - y) ** 2 <= reach * reach) {
+            cells[idx] = 1;
+            clearedCount++;
+          }
+        }
+      }
+    };
+
+    const wipeAt = (x: number, y: number) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      g.addColorStop(0, 'rgba(0,0,0,1)');
+      g.addColorStop(0.55, 'rgba(0,0,0,0.9)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      markCells(x, y);
+    };
+
+    const stroke = (a: Point, b: Point) => {
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      const step = Math.max(4, radius * 0.35);
+      const n = Math.max(1, Math.ceil(dist / step));
+      for (let k = 1; k <= n; k++) {
+        wipeAt(a.x + ((b.x - a.x) * k) / n, a.y + ((b.y - a.y) * k) / n);
+      }
+    };
+
+    const stopDemo = () => {
+      window.clearTimeout(demoTimer);
+      cancelAnimationFrame(demoFrame);
+    };
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      stopDemo();
+      window.clearTimeout(idleTimer);
+      if (hasTouched && 'vibrate' in navigator) navigator.vibrate(18);
+      setPhase('fading');
+      doneTimer = window.setTimeout(() => setPhase('done'), 650);
+    };
+
+    const armIdle = (ms: number) => {
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(finish, ms);
+    };
+
+    const checkProgress = () => {
+      if (clearedCount / (GX * GY) >= 0.55) finish();
+    };
+
+    const interact = (p: Point) => {
+      stopDemo();
+      if (!hasTouched) {
+        hasTouched = true;
+        setTouched(true);
+      }
+      if (last) stroke(last, p);
+      else wipeAt(p.x, p.y);
+      last = p;
+      checkProgress();
+      armIdle(3200);
+    };
+
+    const toPoint = (e: PointerEvent): Point => {
+      const rect = canvas.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+
+    const onDown = (e: PointerEvent) => {
+      down = true;
+      last = null;
+      interact(toPoint(e));
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!down && e.pointerType !== 'mouse') return;
+      interact(toPoint(e));
+    };
+    const onUp = () => {
+      down = false;
+      last = null;
+    };
+
+    /* Один тихий мазок по центру — підказка, що скло можна протерти */
+    const runDemo = () => {
+      const start = performance.now();
+      const duration = 900;
+      let prev: Point | null = null;
+
+      const tick = (now: number) => {
+        const t = Math.min((now - start) / duration, 1);
+        const e = t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+        const p: Point = {
+          x: w * (0.16 + 0.68 * e),
+          y: h * 0.5 + Math.sin(e * Math.PI * 2) * h * 0.05,
+        };
+        if (prev) stroke(prev, p);
+        else wipeAt(p.x, p.y);
+        prev = p;
+
+        if (t < 1) demoFrame = requestAnimationFrame(tick);
+        else {
+          checkProgress();
+          armIdle(5500);
+        }
+      };
+      demoFrame = requestAnimationFrame(tick);
+    };
+
+    const tryStartDemo = () => {
+      if (finished || demoStarted) return;
+      demoStarted = true;
+      demoTimer = window.setTimeout(runDemo, 600);
+    };
+
+    const observer = new ResizeObserver(() => {
+      if (finished) return;
+      const width = Math.round(frame.clientWidth);
+      if (width === 0 || Math.abs(width - w) <= 2) return;
+      paintFrost();
+      tryStartDemo();
+    });
+    observer.observe(frame);
+
+    paintFrost();
+    tryStartDemo();
+
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
+    canvas.addEventListener('pointerleave', onUp);
+
+    return () => {
+      observer.disconnect();
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('pointerleave', onUp);
+      stopDemo();
+      window.clearTimeout(idleTimer);
+      window.clearTimeout(doneTimer);
+    };
+  }, [imgReady]);
 
   return (
-    <section className="relative w-full max-w-7xl mx-auto px-4 md:px-10 pt-32 sm:pt-40 pb-16 min-h-[90vh] flex items-center overflow-visible bg-grain">
-      {/* BACKGROUND ИНДЕКС: Массивный матовый бэкграунд */}
-      <div className="absolute right-0 bottom-6 font-display text-[26vw] uppercase font-black text-[#121318] leading-none select-none pointer-events-none z-0 tracking-tighter opacity-60">
-        SM
+    <div
+      ref={frameRef}
+      className="clip-cut relative aspect-[4/5] w-full overflow-hidden border border-border-subtle bg-carbon shadow-card"
+    >
+      <img
+        ref={imgRef}
+        src={heroImg}
+        alt={site.brand.name}
+        width={1000}
+        height={1250}
+        decoding="async"
+        fetchPriority="high"
+        onLoad={() => setImgReady(true)}
+        className="h-full w-full object-cover object-center"
+      />
+
+      {phase !== 'done' && (
+        <canvas
+          ref={canvasRef}
+          aria-hidden
+          className={`absolute inset-0 size-full touch-pan-y transition-opacity duration-700 ${
+            phase === 'fading' ? 'pointer-events-none opacity-0' : ''
+          }`}
+        />
+      )}
+
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-0 bottom-4 flex justify-center transition-opacity duration-500 ${
+          touched || phase !== 'frosted' ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <span className="tag-mono bg-bg-main/85">Протри скло</span>
       </div>
 
-      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-10">
-        {/* ЛЕВАЯ ЧАСТЬ: Текст, адрес и кнопки */}
-        <div className="lg:col-span-7 flex flex-col justify-center text-center lg:text-left">
-          {/* Премиальный Гео-Маркер */}
-          <a
-            href="https://google.com" // Сюда вставишь реальную ссылку на гугл-карты студии
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2.5 bg-[#121318]/90 border border-[#222430] hover:border-[#ffee00]/30 px-4 py-2 rounded-full mx-auto lg:mx-0 w-fit mb-6 shadow-xl transition-all duration-300 group/geo"
-          >
-            <MapPin
-              size={13}
-              className="text-[#ffee00] animate-[pulse_1.5s_infinite]"
-            />
-            <span className="font-display text-[10px] tracking-[0.15em] text-[#f3f4f6] group-hover/geo:text-[#ffee00] uppercase font-black transition-colors">
-              Дніпро // вул. [Вулиця, 00]
-            </span>
-          </a>
+      {/* Коли скло протерли — не просто чисте фото, а сенс: що саме людина
+          щойно побачила. Коротко, по суті, без вигаданих цифр. */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-4 bottom-4 transition-[opacity,transform] duration-700 ${
+          phase === 'done'
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-2 opacity-0'
+        }`}
+      >
+        <p className="font-display text-lg font-black uppercase leading-none text-text-main">
+          Догляд за авто у {site.business.city}
+        </p>
+      </div>
 
-          {/* Заголовок */}
-          <h1 className="font-display text-4xl sm:text-6xl md:text-7xl lg:text-[5.4rem] uppercase font-black tracking-tight text-[#f3f4f6] leading-[0.9] mb-6">
-            ЕСТЕТИКА <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffee00] via-white to-[#ffee00] bg-size-200 animate-gradient">
-              ВАШОГО
-            </span>{' '}
-            <br />
-            АВТОМОБІЛЯ
-          </h1>
+      <div
+        aria-hidden
+        className="clip-cut pointer-events-none absolute inset-0 border border-accent-yellow/10"
+      />
+    </div>
+  );
+}
 
-          {/* Исправленный, адаптивный параграф-манифест без нейрослопа */}
-          <p className="font-sans text-sm sm:text-base md:text-lg text-[#8b8f9e] max-w-xl mx-auto lg:mx-0 leading-relaxed mb-10 border-l-0 lg:border-l-2 border-[#ffee00]/40 pl-0 lg:pl-4 text-center lg:text-left">
-            Німецькі технології, сертифіковані захисні покриття та{' '}
-            <span className="text-[#f3f4f6] font-semibold drop-shadow-[0_0_15px_rgba(243,244,246,0.1)]">
-              безкомпромісний ручний підхід
-            </span>
-            . Консервуємо бездоганний глянець лаку. Захищаємо кузов там, де інші
-            безсилі.
-          </p>
+/* ==========================================================================
+   Hero
+   ========================================================================== */
 
-          {/* Кнопки с жесткими стандартными классами */}
-          <div className="flex flex-col sm:flex-row items-center gap-6 justify-center lg:justify-start">
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto flex items-center justify-center bg-[#ffee00] hover:bg-[#ccbe00] active:bg-[#b3a600] text-[#0a0a0c] font-display font-black text-xs uppercase tracking-widest py-[18px] px-10 rounded-full transition-all duration-300 hover:shadow-[0_0_35px_rgba(255,238,0,0.35)] scale-100 active:scale-98"
-            >
-              Забронювати час
-            </a>
+function Hero() {
+  return (
+    <section
+      id="hero"
+      className="relative w-full overflow-hidden pt-24 pb-16 lg:pt-36 lg:pb-24"
+    >
+      <div className="container-site relative z-10">
+        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-12 lg:items-center lg:gap-10">
+          {/* Мобілка: contents розчиняє цю обгортку, і заголовок/текст
+              встають по order навколо фото. Десктоп: звичайна ліва колонка. */}
+          <div className="contents lg:col-span-7 lg:block">
+            <div className="order-1 text-center lg:text-left">
+              <h1 className="text-[3.1rem] text-text-main sm:text-7xl md:text-8xl lg:text-[6rem]">
+                ПРЕМІУМ ДЕТЕЙЛІНГ
+                <br />
+                <span className="text-accent-yellow">У ДНІПРІ.</span>
+              </h1>
+            </div>
 
-            <a
-              href="#portfolio" // Исправлен якорь на портфолио
-              className="group text-[#f3f4f6] hover:text-[#ffee00] text-xs uppercase font-black tracking-widest transition-colors py-3 flex items-center gap-2"
-            >
-              Наші роботи
-              <ArrowDown
-                size={16}
-                className="transform group-hover:translate-y-0.5 transition-transform duration-300 text-[#ffee00] animate-[bounce_2s_infinite]"
-              />
-            </a>
+            <div className="order-3 text-center lg:mt-6 lg:text-left">
+              <p className="mx-auto max-w-xl border-l-0 pl-0 text-base text-text-muted lg:mx-0 lg:border-l-2 lg:border-accent-yellow/40 lg:pl-4 lg:text-lg">
+                {site.brand.promise}. Керамічне покриття, антигравійна плівка
+                PPF та ручне полірування —{' '}
+                {site.business.workHours.toLowerCase()}.
+              </p>
+
+              {/* Дві кнопки: одна кричуща — веде на бронювання,
+                  друга пасивна — на портфоліо. Обидві по якорях, не tel:/зовні. */}
+              <div className="mt-9 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
+                <a
+                  href="#contacts"
+                  className="btn-primary shine w-full sm:w-auto"
+                >
+                  Забронювати час
+                </a>
+                <a href="#works" className="btn-ghost w-full sm:w-auto">
+                  Наші роботи
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* ПРАВАЯ ЧАСТЬ: 3D-Экран с автономным покачиванием */}
-        <div className="lg:col-span-5 w-full flex justify-center lg:justify-end relative mt-4 lg:mt-0">
-          <div
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              transform: `perspective(1000px) rotateX(${mousePos.y}deg) rotateY(${mousePos.x}deg)`,
-              transition: mousePos.x === 0 ? 'all 0.5s ease-out' : 'none',
-            }}
-            className="w-full max-w-[365px] h-[54vh] sm:h-[58vh] lg:h-[66vh] rounded-[2.5rem] overflow-hidden border border-[#222430] bg-[#121318] relative shadow-[0_40px_100px_rgba(0,0,0,0.9)] group cursor-crosshair animate-smooth-drift lg:animate-none"
-          >
-            {/* Глубокий премиальный градиент вниз */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-transparent to-transparent z-10 pointer-events-none" />
-
-            <img
-              src={heroLive}
-              alt="SM Detailing Live"
-              className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-103"
-            />
-
-            {/* Внутренний аккуратный неоновый контур */}
-            <div className="absolute inset-0 border border-[#ffee00]/10 rounded-[2.5rem] z-20 pointer-events-none" />
+          {/* Фото: компактна карточка, не на весь екран.
+              На мобілці між заголовком і текстом, на десктопі — справа. */}
+          <div className="relative order-2 mx-auto w-full max-w-[19rem] lg:col-span-5 lg:mx-0 lg:ml-auto lg:max-w-sm">
+            <p
+              aria-hidden
+              className="section-index pointer-events-none absolute -top-8 right-4 z-0 select-none lg:-top-10"
+            >
+              {site.brand.short}
+            </p>
+            <div className="relative z-10">
+              <GlassPhoto />
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+export default Hero;
+export { Hero };

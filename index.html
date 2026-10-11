@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk" prefix="og: https://ogp.me/ns#">
+<html lang="uk" prefix="og: https://ogp.me/ns#" class="is-loading">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -9,11 +9,11 @@
 
     <!-- ===== Основне SEO ===== -->
     <title>
-      Detailing SV — Преміум детейлінг у Дніпрі | вул. Петра Бикова, 16
+      Detailing SV — преміум детейлінг у Дніпрі | 2 студії, керамі́ка, PPF
     </title>
     <meta
       name="description"
-      content="Detailing SV — студія преміум детейлінгу у Дніпрі: керамічне покриття, антигравійна плівка PPF, полірування кузова, хімчистка салону. Запис за телефоном, адреса: вул. Петра Бикова, 16."
+      content="Detailing SV — студія преміум детейлінгу у Дніпрі: керамічне покриття, антигравійна плівка PPF, полірування кузова, хімчистка салону. Дві локації, запис за телефоном +38 (097) 362-48-45."
     />
     <meta
       name="keywords"
@@ -36,20 +36,28 @@
     <meta name="theme-color" content="#07070a" />
     <meta name="color-scheme" content="dark" />
     <meta name="format-detection" content="telephone=yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Detailing SV" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- ===== Open Graph (Facebook, Telegram, Viber, LinkedIn) ===== -->
+    <!-- ===== Open Graph (Facebook, Instagram, Telegram, Viber) ===== -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Detailing SV" />
     <meta property="og:locale" content="uk_UA" />
     <meta property="og:url" content="https://detailing-sv.com.ua/" />
     <meta
       property="og:title"
-      content="Detailing SV — Преміум детейлінг у Дніпрі"
+      content="Detailing SV — преміум детейлінг у Дніпрі"
     />
     <meta
       property="og:description"
-      content="Керамічне покриття, PPF, полірування та хімчистка. Студія детейлінгу на вул. Петра Бикова, 16, Дніпро."
+      content="Керамічне покриття, PPF, полірування та хімчистка. Дві студії детейлінгу в Дніпрі."
     />
     <meta
       property="og:image"
@@ -66,7 +74,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Detailing SV — Преміум детейлінг у Дніпрі"
+      content="Detailing SV — преміум детейлінг у Дніпрі"
     />
     <meta
       name="twitter:description"
@@ -89,53 +97,425 @@
       rel="stylesheet"
     />
 
-    <!-- ===== Structured data: локальний бізнес (бачать краулери без JS) ===== -->
+    <!-- =========================================================
+         Екран завантаження. Стилі вбудовані прямо сюди, щоб він
+         з'являвся миттєво, ще до CSS і JS сайту.
+         Суцільний чорний екран з колом, що крутиться. Коли сайт
+         готовий, карбонові панелі йдуть вгору по черзі — наче
+         знімають чохол з капота. Анімується тільки transform і opacity.
+         Живе ПОЗА #root, щоб React його не чіпав.
+         Мінімум показу 0.5с, максимум 4с.
+         ========================================================= -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #07070a;
+        color: #f4f5f8;
+      }
+
+      html.is-loading {
+        overflow: hidden;
+      }
+
+      #preloader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+      }
+
+      #preloader.is-done {
+        pointer-events: none;
+      }
+
+      /* Панелі: вісім вертикальних колонок, два відтінки графіту */
+      .pl-strips {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+      }
+      .pl-strips i {
+        margin-right: -1px;
+        background: #0c0d11;
+        transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1);
+        transition-delay: 0ms;
+      }
+      .pl-strips i:nth-child(even) {
+        background: #07070a;
+      }
+      #preloader.is-done .pl-strips i {
+        transform: translateY(-101%);
+        transition-delay: calc(var(--i) * 45ms);
+      }
+
+      /* Коло, що крутиться */
+      .pl-ring {
+        position: relative;
+        width: 50px;
+        height: 50px;
+        transition:
+          opacity 0.25s ease,
+          transform 0.25s ease;
+      }
+      #preloader.is-done .pl-ring {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      .pl-ring svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        animation: pl-spin 0.9s linear infinite;
+      }
+      @keyframes pl-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (min-width: 48rem) {
+        .pl-ring {
+          width: 56px;
+          height: 56px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .pl-ring svg {
+          animation-duration: 3s;
+        }
+        .pl-strips i,
+        .pl-ring {
+          transition-duration: 0.01ms;
+          transition-delay: 0ms !important;
+        }
+      }
+    </style>
+    <!-- Без JavaScript екран завантаження не потрібен -->
+    <noscript
+      ><style>
+        #preloader {
+          display: none;
+        }
+        html.is-loading {
+          overflow: auto;
+        }
+      </style></noscript
+    >
+
+    <!-- =========================================================
+         Structured data: організація + 2 локації + послуги + FAQ.
+         Краулер бачить це без JS.
+         TODO: підставити реальні дані другої студії, geo-координати
+         обох точок і посилання sameAs (Instagram / Telegram).
+         ========================================================= -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "AutoRepair",
-        "@id": "https://detailing-sv.com.ua/#business",
-        "name": "Detailing SV",
-        "description": "Студія преміум детейлінгу у Дніпрі: керамічне покриття, антигравійна плівка, полірування, хімчистка салону.",
-        "url": "https://detailing-sv.com.ua/",
-        "image": "https://detailing-sv.com.ua/og-image.jpg",
-        "logo": "https://detailing-sv.com.ua/logo.svg",
-        "telephone": "+380000000000",
-        "priceRange": "₴₴₴",
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "вул. Петра Бикова, 16",
-          "addressLocality": "Дніпро",
-          "addressRegion": "Дніпропетровська область",
-          "postalCode": "49000",
-          "addressCountry": "UA"
-        },
-        "openingHoursSpecification": [
+        "@graph": [
           {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": [
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday",
-              "Saturday"
+            "@type": "Organization",
+            "@id": "https://detailing-sv.com.ua/#org",
+            "name": "Detailing SV",
+            "url": "https://detailing-sv.com.ua/",
+            "logo": "https://detailing-sv.com.ua/logo.svg",
+            "image": "https://detailing-sv.com.ua/og-image.jpg",
+            "telephone": "+380973624845",
+            "sameAs": [
+              "https://www.instagram.com/detailing_s.m?vrfl=MXdlNHZtZXp4eXRyNQ==",
+              "https://t.me/EvtushenkoJenya",
+              "https://wa.me/380973624845"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://detailing-sv.com.ua/#website",
+            "url": "https://detailing-sv.com.ua/",
+            "name": "Detailing SV",
+            "inLanguage": "uk-UA",
+            "publisher": { "@id": "https://detailing-sv.com.ua/#org" }
+          },
+          {
+            "@type": "AutoRepair",
+            "@id": "https://detailing-sv.com.ua/#studio-bykova",
+            "name": "Detailing SV — студія на Петра Бикова",
+            "description": "Керамічне покриття, антигравійна плівка PPF, полірування кузова, хімчистка салону.",
+            "url": "https://detailing-sv.com.ua/#contacts",
+            "image": "https://detailing-sv.com.ua/og-image.jpg",
+            "telephone": "+380973624845",
+            "priceRange": "₴₴₴",
+            "currenciesAccepted": "UAH",
+            "paymentAccepted": "Готівка, картка, безготівковий розрахунок",
+            "parentOrganization": { "@id": "https://detailing-sv.com.ua/#org" },
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "вул. Петра Бикова, 16",
+              "addressLocality": "Дніпро",
+              "addressRegion": "Дніпропетровська область",
+              "postalCode": "49000",
+              "addressCountry": "UA"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 48.4647,
+              "longitude": 35.0462
+            },
+            "openingHoursSpecification": [
+              {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday"
+                ],
+                "opens": "09:00",
+                "closes": "19:00"
+              }
             ],
-            "opens": "09:00",
-            "closes": "19:00"
+            "areaServed": { "@type": "City", "name": "Дніпро" },
+            "hasOfferCatalog": {
+              "@type": "OfferCatalog",
+              "name": "Послуги детейлінгу",
+              "itemListElement": [
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Керамічне покриття кузова"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Антигравійна плівка PPF"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Полірування кузова"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Хімчистка салону"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "@type": "AutoRepair",
+            "@id": "https://detailing-sv.com.ua/#studio-second",
+            "name": "Detailing SV — друга студія",
+            "description": "Друга локація Detailing SV у Дніпрі.",
+            "url": "https://detailing-sv.com.ua/#contacts",
+            "image": "https://detailing-sv.com.ua/og-image.jpg",
+            "telephone": "+380973624845",
+            "priceRange": "₴₴₴",
+            "parentOrganization": { "@id": "https://detailing-sv.com.ua/#org" },
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "вул. Назва, 00",
+              "addressLocality": "Дніпро",
+              "addressRegion": "Дніпропетровська область",
+              "postalCode": "49000",
+              "addressCountry": "UA"
+            },
+            "openingHoursSpecification": [
+              {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday"
+                ],
+                "opens": "09:00",
+                "closes": "19:00"
+              }
+            ],
+            "areaServed": { "@type": "City", "name": "Дніпро" }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://detailing-sv.com.ua/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Скільки часу займає нанесення керамічного покриття?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Залежить від стану лаку. Комплекс із підготовкою, поліруванням і нанесенням кераміки зазвичай займає від 2 до 4 днів — авто лишається в студії."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Чим антигравійна плівка PPF краща за кераміку?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "PPF фізично захищає лак від сколів і піску, кераміка дає гідрофобність, глибину кольору та спрощує миття. Часто їх комбінують: плівка на зони ударів, кераміка поверх усього кузова."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Чи потрібен попередній запис?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Так. Ми беремо обмежену кількість авто одночасно, тому дату узгоджуємо заздалегідь за телефоном або в Telegram чи WhatsApp."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Як доглядати за авто після детейлінгу?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Безконтактне миття з pH-нейтральною хімією, без «метеликів» і жорстких щіток. Детальні рекомендації видаємо разом з авто."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Скільки коштує детейлінг?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Ціна залежить від класу авто, стану покриття та обраного комплексу. Орієнтовні суми вказані в розділі «Послуги», точну називаємо після огляду — безкоштовно."
+                }
+              }
+            ]
           }
-        ],
-        "areaServed": { "@type": "City", "name": "Дніпро" },
-        "sameAs": []
+        ]
       }
     </script>
   </head>
   <body>
     <noscript>
-      Detailing SV — преміум детейлінг у Дніпрі, вул. Петра Бикова, 16. Для
-      коректної роботи сайту увімкніть JavaScript.
+      <h1>Detailing SV — преміум детейлінг у Дніпрі</h1>
+      <p>
+        Керамічне покриття, антигравійна плівка PPF, полірування кузова,
+        хімчистка салону. Дві студії в Дніпрі, вул. Петра Бикова, 16. Запис:
+        <a href="tel:+380973624845">+38 (097) 362-48-45</a>.
+      </p>
+      <p>Для повної версії сайту увімкніть JavaScript.</p>
     </noscript>
+    <div id="preloader" role="status" aria-live="polite">
+      <div class="pl-strips" aria-hidden="true">
+        <i style="--i: 0"></i><i style="--i: 1"></i><i style="--i: 2"></i
+        ><i style="--i: 3"></i><i style="--i: 4"></i><i style="--i: 5"></i
+        ><i style="--i: 6"></i><i style="--i: 7"></i>
+      </div>
+      <div class="pl-ring">
+        <svg viewBox="0 0 50 50" fill="none" aria-hidden="true">
+          <circle cx="25" cy="25" r="20" stroke="#1e202b" stroke-width="4" />
+          <circle
+            cx="25"
+            cy="25"
+            r="20"
+            stroke="#fff500"
+            stroke-width="4"
+            stroke-linecap="round"
+            stroke-dasharray="34 92"
+          />
+        </svg>
+        <span
+          style="
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+          "
+          >Завантаження…</span
+        >
+      </div>
+    </div>
+
     <div id="root"></div>
+
+    <!--
+      Прибирає екран завантаження, коли готові: сторінка, шрифти й головне
+      фото. Мінімум 500мс (щоб не мигало), максимум 4с (щоб не зависнути).
+      Подію "app:ready" шле, коли панелі вже пішли вгору: по ній Hero може
+      запускати свої анімації.
+    -->
+    <script>
+      (function () {
+        var html = document.documentElement;
+        var pre = document.getElementById('preloader');
+        if (!pre) {
+          html.classList.remove('is-loading');
+          return;
+        }
+
+        var started = performance.now();
+        var MIN = 500;
+        var MAX = 4000;
+        var finished = false;
+
+        function finish() {
+          if (finished) return;
+          finished = true;
+          var wait = Math.max(0, MIN - (performance.now() - started));
+          setTimeout(function () {
+            pre.classList.add('is-done');
+            setTimeout(function () {
+              html.classList.remove('is-loading');
+              window.dispatchEvent(new Event('app:ready'));
+            }, 300);
+            setTimeout(function () {
+              pre.remove();
+            }, 1400);
+          }, wait);
+        }
+
+        var loaded = new Promise(function (resolve) {
+          if (document.readyState === 'complete') resolve();
+          else window.addEventListener('load', resolve, { once: true });
+        });
+
+        function fonts() {
+          if (!document.fonts || !document.fonts.load) return Promise.resolve();
+          return Promise.all([
+            document.fonts.load('900 1em "Sofia Sans Extra Condensed"'),
+            document.fonts.load('400 1em "Onest"'),
+          ]).catch(function () {});
+        }
+
+        function heroImage() {
+          return new Promise(function (resolve) {
+            var tries = 0;
+            (function look() {
+              var img = document.querySelector('#root img');
+              if (img) {
+                if (img.complete) return resolve();
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+                return;
+              }
+              if (++tries > 30) return resolve();
+              setTimeout(look, 50);
+            })();
+          });
+        }
+
+        loaded.then(fonts).then(heroImage).then(finish);
+        setTimeout(finish, MAX);
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

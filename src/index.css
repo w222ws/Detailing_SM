@@ -1,12 +1,16 @@
 @import 'tailwindcss';
 
 /* =========================================================
-   TOKENS — "Night Garage": графит, карбон, жёлтый как отблеск
-   фары на чёрном лаке. Sofia Sans Extra Condensed = высокий
-   плакатный дисплей, Onest = чистый текст,
-   JetBrains Mono = технические метки.
+   DETAILING SV — "NIGHT GARAGE"
+   Графит, карбон, жёлтый как отблеск фары на чёрном лаке.
+   Sofia Sans Extra Condensed — плакатный дисплей,
+   Onest — текст, JetBrains Mono — технические метки.
+
+   ЦВЕТА ЛОГОТИПА: меняешь 4 строки в блоке ACCENT —
+   перекрашивается весь сайт.
    ========================================================= */
 @theme {
+  /* --- поверхности --- */
   --color-bg-main: #07070a;
   --color-bg-elevated: #0c0d11;
   --color-bg-card: #101117;
@@ -14,30 +18,45 @@
   --color-border-subtle: #1e202b;
   --color-border-strong: #343849;
 
-  --color-accent-yellow: #ffe600;
-  --color-accent-yellow-dark: #c9b400;
-  --color-accent-yellow-soft: rgb(255 230 0 / 0.1);
-  --color-steel: #aab0c4;
+  /* --- ACCENT: взято с лого (чистий лимонний #FFFF01, не золотий) --- */
+  --color-accent: #fff500;
+  --color-accent-hot: #ffff7a;
+  --color-accent-dark: #c7c000;
+  --color-accent-soft: rgb(255 245 0 / 0.1);
 
+  /* алиасы, чтобы старая разметка не ломалась */
+  --color-accent-yellow: var(--color-accent);
+  --color-accent-yellow-dark: var(--color-accent-dark);
+  --color-accent-yellow-soft: var(--color-accent-soft);
+
+  --color-steel: #aab0c4;
+  --color-chrome: #d7dbe6;
+
+  /* --- текст --- */
   --color-text-main: #f4f5f8;
   --color-text-muted: #8a8fa3;
   --color-text-dim: #565a6e;
 
+  /* --- шрифты --- */
   --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Sofia Sans Extra Condensed', 'Onest', Impact, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 
-  --radius-bento: 0.375rem; /* острые «кузовные» углы вместо мягких */
+  /* --- геометрия: острые «кузовные» углы --- */
+  --radius-bento: 0.375rem;
   --radius-control: 0.25rem;
 
   --shadow-card:
     0 1px 0 0 rgb(255 255 255 / 0.05) inset, 0 30px 60px -30px rgb(0 0 0 / 0.9);
   --shadow-glow:
-    0 0 0 1px rgb(255 230 0 / 0.5), 0 0 60px -10px rgb(255 230 0 / 0.45);
+    0 0 0 1px rgb(255 245 0 / 0.5), 0 0 60px -10px rgb(255 245 0 / 0.45);
+  --shadow-lift: 0 24px 48px -24px rgb(0 0 0 / 0.85);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  /* --- анимации --- */
   --animate-marquee: marquee 30s linear infinite;
   --animate-marquee-fast: marqueeReverse 16s linear infinite;
   --animate-smooth-drift: smoothDrift 9s ease-in-out infinite;
@@ -48,6 +67,9 @@
   --animate-scan: scan 7s linear infinite;
   --animate-call-ripple: callRipple 5s ease-out infinite;
   --animate-call-shake: callShake 5s ease-in-out infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-blink: blink 1.6s steps(1, end) infinite;
+  --animate-rotate-slow: spin 22s linear infinite;
 }
 
 /* =========================================================
@@ -115,14 +137,13 @@
 
 @keyframes pulseRing {
   0% {
-    box-shadow: 0 0 0 0 rgb(255 230 0 / 0.55);
+    box-shadow: 0 0 0 0 rgb(255 245 0 / 0.55);
   }
   100% {
-    box-shadow: 0 0 0 18px rgb(255 230 0 / 0);
+    box-shadow: 0 0 0 18px rgb(255 245 0 / 0);
   }
 }
 
-/* горизонтальная «линия сканера» */
 @keyframes scan {
   0% {
     transform: translateY(-100%);
@@ -132,7 +153,7 @@
   }
 }
 
-/* кнопка звонка: раз в ~5 сек расходятся два контурных кольца и трубка «звонит», остальное время покой */
+/* кнопка звонка: раз в ~5 сек кольца + «тряска» трубки */
 @keyframes callRipple {
   0% {
     transform: scale(1);
@@ -168,6 +189,27 @@
   }
   18% {
     transform: rotate(3deg);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.15;
   }
 }
 
@@ -217,6 +259,11 @@
     max-width: 100%;
   }
 
+  /* фото в галерее: пока грузится — не белая дыра */
+  img {
+    background-color: var(--color-bg-elevated);
+  }
+
   button,
   a,
   [role='button'] {
@@ -227,19 +274,28 @@
     cursor: pointer;
   }
 
+  summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
   ::selection {
-    background-color: var(--color-accent-yellow);
+    background-color: var(--color-accent);
     color: var(--color-bg-main);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent-yellow);
+    outline: 2px solid var(--color-accent);
     outline-offset: 3px;
   }
 }
 
 /* =========================================================
-   UTILITIES
+   LAYOUT
    ========================================================= */
 @utility container-site {
   width: 100%;
@@ -263,7 +319,18 @@
   }
 }
 
-/* --- фоны --- */
+/* отступ снизу под мобильную плашку звонка */
+@utility safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+
+  @media (min-width: 48rem) {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* =========================================================
+   ФОНЫ
+   ========================================================= */
 @utility bg-grain {
   background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 0);
   background-size: 22px 22px;
@@ -294,35 +361,57 @@
   mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
 }
 
+/* протектор шины — диагональная насечка, хорош для узких полос */
+@utility bg-tread {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgb(255 255 255 / 0.05) 0 2px,
+    transparent 2px 10px
+  );
+}
+
 /* жёлтое свечение «фары» из угла */
 @utility bg-headlight {
   background-image:
-    radial-gradient(60% 50% at 85% 0%, rgb(255 230 0 / 0.16), transparent 70%),
-    radial-gradient(40% 40% at 10% 100%, rgb(255 230 0 / 0.06), transparent 70%);
+    radial-gradient(60% 50% at 85% 0%, rgb(255 245 0 / 0.16), transparent 70%),
+    radial-gradient(40% 40% at 10% 100%, rgb(255 245 0 / 0.06), transparent 70%);
+}
+
+/* мягкое затухание секции в чёрный сверху и снизу */
+@utility bg-fade-y {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
 }
 
 @utility bg-size-200 {
   background-size: 200% auto;
 }
 
-/* --- типографика --- */
+/* =========================================================
+   ТИПОГРАФИКА
+   ========================================================= */
 @utility text-stroke-neon {
   -webkit-text-stroke: 1px var(--color-border-strong);
   color: transparent;
 }
 
 @utility text-stroke-accent {
-  -webkit-text-stroke: 1.5px var(--color-accent-yellow);
+  -webkit-text-stroke: 1.5px var(--color-accent);
   color: transparent;
 }
 
 @utility text-gradient-accent {
   background-image: linear-gradient(
     100deg,
-    var(--color-accent-yellow) 0%,
+    var(--color-accent) 0%,
     #fffbb0 35%,
-    var(--color-accent-yellow-dark) 70%,
-    var(--color-accent-yellow) 100%
+    var(--color-accent-dark) 70%,
+    var(--color-accent) 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -331,14 +420,29 @@
   color: transparent;
 }
 
-/* техническая метка: 01 / ПОСЛУГИ */
+/* хромированный текст — для цифр статистики */
+@utility text-chrome {
+  background-image: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    var(--color-chrome) 45%,
+    #6e7488 55%,
+    #ffffff 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* техническая метка: ——— 01 / ПОСЛУГИ */
 @utility eyebrow {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--color-accent-yellow);
+  color: var(--color-accent);
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
@@ -351,8 +455,35 @@
   }
 }
 
-/* --- формы --- */
-/* срезанный угол — фирменный «кузовной» силуэт */
+/* огромный полупрозрачный номер секции на фоне */
+@utility section-index {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(7rem, 22vw, 18rem);
+  line-height: 0.75;
+  -webkit-text-stroke: 1px var(--color-border-subtle);
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* моношная подпись-метка: VIN, артикул, «гарантія 5 років» */
+@utility tag-mono {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-subtle);
+  padding: 0.3rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* =========================================================
+   ФОРМЫ / СИЛУЭТЫ
+   ========================================================= */
 @utility clip-cut {
   clip-path: polygon(
     0 0,
@@ -375,11 +506,37 @@
   );
 }
 
+/* срез только сверху справа — для карточек прайса */
+@utility clip-corner {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 1.5rem) 0,
+    100% 1.5rem,
+    100% 100%,
+    0 100%
+  );
+}
+
 @utility hairline {
   border: 1px solid var(--color-border-subtle);
 }
 
-/* --- поверхности --- */
+/* тонкая «хромовая» линия-разделитель */
+@utility rule-chrome {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-border-strong) 20%,
+    var(--color-accent) 50%,
+    var(--color-border-strong) 80%,
+    transparent
+  );
+}
+
+/* =========================================================
+   ПОВЕРХНОСТИ
+   ========================================================= */
 @utility glass {
   background-color: rgb(7 7 10 / 0.7);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
@@ -388,7 +545,7 @@
 }
 
 /* Карточка с «прожектором» за курсором.
-   В JS на hover задавать --mx / --my (px) на элементе. */
+   В JS на mousemove задавать --mx / --my (px) на элементе. */
 @utility card-bento {
   position: relative;
   isolation: isolate;
@@ -410,13 +567,13 @@
     transition: opacity 0.4s var(--ease-smooth);
     background: radial-gradient(
       380px circle at var(--mx, 50%) var(--my, 0%),
-      rgb(255 230 0 / 0.12),
+      rgb(255 245 0 / 0.12),
       transparent 60%
     );
   }
 
   &:hover {
-    border-color: rgb(255 230 0 / 0.45);
+    border-color: rgb(255 245 0 / 0.45);
     transform: translateY(-3px);
   }
 
@@ -425,7 +582,13 @@
   }
 }
 
-/* блик по лаку: добавить на родителя с relative + overflow-hidden */
+/* выделенная карточка (рекомендованный пакет) */
+@utility card-featured {
+  border-color: rgb(255 245 0 / 0.55);
+  box-shadow: var(--shadow-glow);
+}
+
+/* блик по лаку: родитель relative + overflow-hidden */
 @utility shine {
   position: relative;
   overflow: hidden;
@@ -446,7 +609,40 @@
   }
 }
 
-/* --- кнопки --- */
+/* стеклянный глянец сверху — «свежий слой керамики» */
+@utility lacquer {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      160deg,
+      rgb(255 255 255 / 0.1) 0%,
+      transparent 35%
+    );
+  }
+}
+
+/* затемнение низа фото под подпись */
+@utility media-veil {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 55%;
+    pointer-events: none;
+    background: linear-gradient(to top, rgb(7 7 10 / 0.92), transparent);
+  }
+}
+
+/* =========================================================
+   КНОПКИ
+   ========================================================= */
 @utility btn-primary {
   position: relative;
   display: inline-flex;
@@ -460,7 +656,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-bg-main);
-  background-color: var(--color-accent-yellow);
+  background-color: var(--color-accent);
   clip-path: polygon(
     0 0,
     calc(100% - 0.75rem) 0,
@@ -475,9 +671,9 @@
     filter 0.3s var(--ease-smooth);
 
   &:hover {
-    background-color: #fff35c;
+    background-color: var(--color-accent-hot);
     transform: translateY(-2px);
-    filter: drop-shadow(0 10px 24px rgb(255 230 0 / 0.35));
+    filter: drop-shadow(0 10px 24px rgb(255 245 0 / 0.35));
   }
 
   &:active {
@@ -504,19 +700,166 @@
     background-color 0.3s var(--ease-smooth);
 
   &:hover {
-    border-color: var(--color-accent-yellow);
-    color: var(--color-accent-yellow);
-    background-color: var(--color-accent-yellow-soft);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background-color: var(--color-accent-soft);
   }
 }
 
-/* пульсирующая точка «онлайн / приймаємо» */
+/* круглая иконка-кнопка: мессенджеры в хедере и футере */
+@utility btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-control);
+  transition:
+    color 0.25s var(--ease-smooth),
+    border-color 0.25s var(--ease-smooth),
+    background-color 0.25s var(--ease-smooth),
+    transform 0.25s var(--ease-spring);
+
+  &:hover {
+    color: var(--color-bg-main);
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+  }
+}
+
+/* подчёркивание ссылок в меню, растущее от левого края */
+@utility link-underline {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -0.35rem;
+    height: 1px;
+    width: 100%;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s var(--ease-out-expo);
+  }
+
+  &:hover::after,
+  &[data-active='true']::after {
+    transform: scaleX(1);
+  }
+}
+
+/* пульсирующая точка «працюємо / приймаємо» */
 @utility dot-live {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 9999px;
-  background-color: var(--color-accent-yellow);
+  background-color: var(--color-accent);
   animation: var(--animate-pulse-ring);
+}
+
+/* =========================================================
+   BEFORE / AFTER СЛАЙДЕР
+   JS ставит --pos (0–100%) на корневом элементе .ba-slider
+   ========================================================= */
+@utility ba-slider {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  user-select: none;
+  touch-action: pan-y;
+  cursor: ew-resize;
+}
+
+/* верхний слой («після») обрезается по --pos */
+@utility ba-clip {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 calc(100% - var(--pos, 50%)) 0 0);
+  will-change: clip-path;
+}
+
+@utility ba-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--pos, 50%);
+  width: 2px;
+  translate: -50% 0;
+  background: var(--color-accent);
+  box-shadow: 0 0 24px rgb(255 245 0 / 0.6);
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2.75rem;
+    height: 2.75rem;
+    translate: -50% -50%;
+    border: 2px solid var(--color-accent);
+    border-radius: 9999px;
+    background: rgb(7 7 10 / 0.75);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+}
+
+/* подписи ДО / ПІСЛЯ по углам */
+@utility ba-label {
+  position: absolute;
+  bottom: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  background: rgb(7 7 10 / 0.75);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-main);
+  pointer-events: none;
+}
+
+/* =========================================================
+   АККОРДЕОН (FAQ) — плавная высота без JS-измерений
+   ========================================================= */
+@utility accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s var(--ease-out-expo);
+
+  & > * {
+    overflow: hidden;
+  }
+}
+
+@utility accordion-open {
+  grid-template-rows: 1fr;
+}
+
+/* =========================================================
+   МОБИЛЬНАЯ ПЛАШКА ЗВОНКА
+   ========================================================= */
+@utility bar-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  background-color: rgb(7 7 10 / 0.85);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--color-border-subtle);
+
+  @media (min-width: 48rem) {
+    display: none;
+  }
 }
 
 /* =========================================================
@@ -537,7 +880,16 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent-yellow);
+  background: var(--color-accent);
+}
+
+/* горизонтальные ленты галереи — скрываем полосу */
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* =========================================================
