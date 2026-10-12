@@ -3,14 +3,32 @@ import { site } from '../config/site';
 import heroImg from '../assets/hero-bg.avif';
 
 /* ==========================================================================
-   Фото за матовим склом: наче віддих на холодному вікні боксу.
-   Проводиш пальцем/курсором — скло протирається смугою, під ним чітке фото.
-   Матовість — це сама ж фотографія, тільки розмита й освітлена:
-   справжнє скло, а не намальований бруд.
+   Фото в мильній піні: проводиш пальцем/курсором — піна стирається смугою,
+   під нею чітке фото. Той самий принцип, що й на сайті саду (намальовані
+   на canvas плями + лічильник стертого по сітці), тільки замість землі —
+   біла піна з автомийки.
    ========================================================================== */
 
 type Point = { x: number; y: number };
-type Phase = 'frosted' | 'fading' | 'done';
+type Phase = 'foamy' | 'fading' | 'done';
+
+/* Біла піна з ледь голубуватим відливом — не чисто білий, щоб не зливався з фоном */
+const FOAM_COLORS: [number, number, number][] = [
+  [255, 255, 255],
+  [240, 246, 250],
+  [226, 238, 245],
+  [247, 250, 252],
+];
+
+/* Детерміновований random: візерунок піни однаковий при кожному завантаженні */
+function seeded(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 function GlassPhoto() {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -22,7 +40,7 @@ function GlassPhoto() {
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
       ? 'done'
-      : 'frosted',
+      : 'foamy',
   );
   const [touched, setTouched] = useState(false);
 
@@ -33,14 +51,16 @@ function GlassPhoto() {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !frame || !img || !ctx || !imgReady) return;
 
-    const GX = 22;
-    const GY = 26;
+    const GX = 24;
+    const GY = 30;
 
     let w = 0;
     let h = 0;
     let radius = 30;
-    let cells = new Uint8Array(0);
+    let cells = new Uint8Array(0); // 0 чисто, 1 піна, 2 стерто
+    let foamTotal = 0;
     let clearedCount = 0;
+    let painted = false;
     let finished = false;
     let hasTouched = false;
     let down = false;
@@ -51,7 +71,63 @@ function GlassPhoto() {
     let idleTimer = 0;
     let doneTimer = 0;
 
-    const paintFrost = () => {
+    const drawLobe = (
+      cx: number,
+      cy: number,
+      r: number,
+      c: [number, number, number],
+      alpha: number,
+    ) => {
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${alpha})`);
+      g.addColorStop(0.72, `rgba(${c[0]},${c[1]},${c[2]},${alpha * 0.9})`);
+      g.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    /* Окрема бульбашка: блік зверху-зліва + тонкий сіро-блакитний обвід знизу —
+       саме це відрізняє піну від рівного снігового налипання. */
+    const drawBubble = (cx: number, cy: number, r: number) => {
+      const g = ctx.createRadialGradient(
+        cx - r * 0.3,
+        cy - r * 0.35,
+        r * 0.05,
+        cx,
+        cy,
+        r,
+      );
+      g.addColorStop(0, 'rgba(255,255,255,0.95)');
+      g.addColorStop(0.55, 'rgba(228,240,246,0.8)');
+      g.addColorStop(1, 'rgba(196,214,226,0.42)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // тінь по нижньому краю — об'єм бульбашки
+      ctx.strokeStyle = 'rgba(150,172,188,0.4)';
+      ctx.lineWidth = Math.max(1, r * 0.06);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.94, Math.PI * 0.15, Math.PI * 0.85);
+      ctx.stroke();
+
+      // блискучий відблиск
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(
+        cx - r * 0.38,
+        cy - r * 0.38,
+        Math.max(1, r * 0.2),
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    };
+
+    const paintFoam = () => {
       w = Math.round(frame.clientWidth);
       h = Math.round(frame.clientHeight);
       if (!w || !h) return;
@@ -61,36 +137,61 @@ function GlassPhoto() {
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
-      radius = Math.max(30, w * 0.11);
+      radius = Math.max(26, w * 0.09);
 
-      // те саме фото, тільки розмите й підсвітлене — справжня матовість скла.
-      // Кадруємо як object-cover, інакше фото тупо розтягується під рамку.
-      const iw = img.naturalWidth || w;
-      const ih = img.naturalHeight || h;
-      const boxRatio = w / h;
-      const imgRatio = iw / ih;
-      let sx = 0;
-      let sy = 0;
-      let sw = iw;
-      let sh = ih;
-      if (imgRatio > boxRatio) {
-        sw = ih * boxRatio;
-        sx = (iw - sw) / 2;
-      } else {
-        sh = iw / boxRatio;
-        sy = (ih - sh) / 2;
-      }
-
-      ctx.filter = 'blur(16px) saturate(0.85) brightness(1.22)';
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
-      ctx.filter = 'none';
-
-      // легка біла поволока зверху
-      ctx.fillStyle = 'rgba(244,245,248,0.22)';
+      // легка блакитниста поволока по всьому кадру — не чисто білий сніг
+      ctx.fillStyle = 'rgba(220,234,242,0.22)';
       ctx.fillRect(0, 0, w, h);
 
+      const rand = seeded(11);
+
+      // великі пухнасті плями піни: кілька накладених м'яких кіл-основ
+      for (let i = 0; i < 12; i++) {
+        const cx = rand() * w;
+        const cy = rand() * h;
+        const base = (0.07 + rand() * 0.1) * w;
+        const color = FOAM_COLORS[Math.floor(rand() * FOAM_COLORS.length)];
+        for (let k = 0; k < 4; k++) {
+          drawLobe(
+            cx + (rand() - 0.5) * base,
+            cy + (rand() - 0.5) * base,
+            base * (0.55 + rand() * 0.5),
+            color,
+            0.8 + rand() * 0.15,
+          );
+        }
+      }
+
+      // окремі бульбашки різного розміру — фактура, якої не вистачало
+      for (let i = 0; i < 46; i++) {
+        drawBubble(rand() * w, rand() * h, (0.028 + rand() * 0.05) * w);
+      }
+
+      // дрібна піняста крапка
+      for (let i = 0; i < 90; i++) {
+        const color = FOAM_COLORS[Math.floor(rand() * FOAM_COLORS.length)];
+        drawLobe(rand() * w, rand() * h, 1.5 + rand() * 5, color, 0.7);
+      }
+
+      // рахуємо, в яких клітинах реально є піна (по зменшеній копії)
       cells = new Uint8Array(GX * GY);
+      foamTotal = 0;
       clearedCount = 0;
+      const probe = document.createElement('canvas');
+      probe.width = GX;
+      probe.height = GY;
+      const pctx = probe.getContext('2d');
+      if (pctx) {
+        pctx.drawImage(canvas, 0, 0, GX, GY);
+        const data = pctx.getImageData(0, 0, GX, GY).data;
+        for (let i = 0; i < GX * GY; i++) {
+          if (data[i * 4 + 3] > 90) {
+            cells[i] = 1;
+            foamTotal++;
+          }
+        }
+      }
+      painted = true;
       demoStarted = false;
     };
 
@@ -103,11 +204,11 @@ function GlassPhoto() {
       for (let j = j0; j <= j1; j++) {
         for (let i = i0; i <= i1; i++) {
           const idx = j * GX + i;
-          if (cells[idx] === 1) continue;
+          if (cells[idx] !== 1) continue;
           const cx = ((i + 0.5) / GX) * w;
           const cy = ((j + 0.5) / GY) * h;
           if ((cx - x) ** 2 + (cy - y) ** 2 <= reach * reach) {
-            cells[idx] = 1;
+            cells[idx] = 2;
             clearedCount++;
           }
         }
@@ -157,7 +258,7 @@ function GlassPhoto() {
     };
 
     const checkProgress = () => {
-      if (clearedCount / (GX * GY) >= 0.55) finish();
+      if (foamTotal === 0 || clearedCount / foamTotal >= 0.6) finish();
     };
 
     const interact = (p: Point) => {
@@ -192,7 +293,7 @@ function GlassPhoto() {
       last = null;
     };
 
-    /* Один тихий мазок по центру — підказка, що скло можна протерти */
+    /* Один тихий мазок по центру — підказка, що піну можна стерти */
     const runDemo = () => {
       const start = performance.now();
       const duration = 900;
@@ -219,7 +320,7 @@ function GlassPhoto() {
     };
 
     const tryStartDemo = () => {
-      if (finished || demoStarted) return;
+      if (finished || demoStarted || !painted) return;
       demoStarted = true;
       demoTimer = window.setTimeout(runDemo, 600);
     };
@@ -228,12 +329,12 @@ function GlassPhoto() {
       if (finished) return;
       const width = Math.round(frame.clientWidth);
       if (width === 0 || Math.abs(width - w) <= 2) return;
-      paintFrost();
+      paintFoam();
       tryStartDemo();
     });
     observer.observe(frame);
 
-    paintFrost();
+    paintFoam();
     tryStartDemo();
 
     canvas.addEventListener('pointerdown', onDown);
@@ -285,25 +386,28 @@ function GlassPhoto() {
       <div
         aria-hidden
         className={`pointer-events-none absolute inset-x-0 bottom-4 flex justify-center transition-opacity duration-500 ${
-          touched || phase !== 'frosted' ? 'opacity-0' : 'opacity-100'
+          touched || phase !== 'foamy' ? 'opacity-0' : 'opacity-100'
         }`}
       >
-        <span className="tag-mono bg-bg-main/85">Протри скло</span>
+        <span className="tag-mono bg-bg-main/85">Змий піну</span>
       </div>
 
-      {/* Коли скло протерли — не просто чисте фото, а сенс: що саме людина
-          щойно побачила. Коротко, по суті, без вигаданих цифр. */}
+      {/* Коли піну змили — не просто чисте фото, а сенс: що саме людина
+          щойно побачила. Той самий низ по центру, що й підказка «Змий піну». */}
       <div
         aria-hidden
-        className={`pointer-events-none absolute inset-x-4 bottom-4 transition-[opacity,transform] duration-700 ${
+        className={`pointer-events-none absolute inset-x-0 bottom-4 flex justify-center transition-[opacity,transform] duration-700 ${
           phase === 'done'
             ? 'translate-y-0 opacity-100'
             : 'translate-y-2 opacity-0'
         }`}
       >
-        <p className="font-display text-lg font-black uppercase leading-none text-text-main">
-          Догляд за авто у {site.business.city}
-        </p>
+        <span
+          className="tag-mono bg-bg-main/85"
+          style={{ color: 'var(--color-accent)' }}
+        >
+          Догляд за твоїм авто
+        </span>
       </div>
 
       <div
@@ -333,7 +437,7 @@ function Hero() {
               <h1 className="text-[3.1rem] text-text-main sm:text-7xl md:text-8xl lg:text-[6rem]">
                 ПРЕМІУМ ДЕТЕЙЛІНГ
                 <br />
-                <span className="text-accent-yellow">У ДНІПРІ.</span>
+                <span className="text-accent-yellow">У ДНІПРІ</span>
               </h1>
             </div>
 

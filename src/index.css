@@ -57,8 +57,9 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* --- анимации --- */
-  --animate-marquee: marquee 30s linear infinite;
-  --animate-marquee-fast: marqueeReverse 16s linear infinite;
+  --animate-marquee: marquee 14s linear infinite;
+  --animate-marquee-fast: marqueeReverse 9s linear infinite;
+  --animate-marquee-word: marqueeWordJitter 2.4s ease-in-out infinite;
   --animate-smooth-drift: smoothDrift 9s ease-in-out infinite;
   --animate-gradient: textGradient 6s linear infinite;
   --animate-fade-up: fadeUp 0.8s var(--ease-out-expo) both;
@@ -87,6 +88,54 @@
   }
   to {
     transform: translateX(0%);
+  }
+}
+
+/* =========================================================
+   МАРКІ-ТРЕК — швидкість, що відчувається однаково на будь-якому
+   екрані. На мобілці текст у ~4 рази дрібніший за десктопний, тому
+   за ту саму тривалість проїжджає набагато менший шлях і «на око»
+   здається повільним — компенсуємо коротшою тривалістю на малих
+   екранах замість єдиного фіксованого часу з --animate-marquee.
+   ========================================================= */
+.marquee-track {
+  animation: marquee 6s linear infinite;
+}
+.marquee-track-reverse {
+  animation: marqueeReverse 4.2s linear infinite;
+}
+@media (min-width: 640px) {
+  .marquee-track {
+    animation-duration: 9s;
+  }
+  .marquee-track-reverse {
+    animation-duration: 6s;
+  }
+}
+@media (min-width: 1024px) {
+  .marquee-track {
+    animation-duration: 13s;
+  }
+  .marquee-track-reverse {
+    animation-duration: 8.5s;
+  }
+}
+
+/* Хаотичне тремтіння окремого слова в стрічці — кожен елемент має свою
+   тривалість/затримку (інлайн-стилем), тому рухаються не в унісон. */
+@keyframes marqueeWordJitter {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-0.2em) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(0.1em) rotate(1deg);
+  }
+  75% {
+    transform: translateY(-0.1em) rotate(-0.5deg);
   }
 }
 
