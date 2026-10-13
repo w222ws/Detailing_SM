@@ -1,262 +1,283 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Check, Copy, MapPin, Phone, Send } from 'lucide-react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import {
+  ArrowUpIcon,
+  CheckIcon,
+  ClockIcon,
+  CopyIcon,
+  InstagramLogoIcon,
+  MapPinIcon,
+  TelegramLogoIcon,
+  WhatsappLogoIcon,
+  type IconProps,
+} from '@phosphor-icons/react';
+import {
+  brand,
+  business,
+  contacts,
+  messengers,
+  navigation,
+} from '../config/site';
+import { locations } from '../config/locations';
+import { contactSection, developer } from '../config/contact';
+import logoImg from '../assets/logo.avif';
 
-const PHONE = '+380000000000';
-const FORMATTED_PHONE = '+38000000000';
-const ADDRESS = 'Успенська площа, 11, Дніпро';
+/* ==========================================================================
+   #contacts — він же футер сайту: велика кнопка дзвінка, лого + опис,
+   розділи, месенджери, студії та графік, права.
+   Статичний (без анімацій). Фон bg-bg-elevated збігається з фоном лого.
+   Усе з config: site.ts, locations.ts, contact.ts.
+   ========================================================================== */
 
-const TELEGRAM_URL = 'https://t.me/your_username';
-const INSTAGRAM_URL = 'https://instagram.com/your_profile';
-const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADDRESS)}`;
+const ICONS: Record<string, React.ComponentType<IconProps>> = {
+  TelegramLogo: TelegramLogoIcon,
+  InstagramLogo: InstagramLogoIcon,
+  WhatsappLogo: WhatsappLogoIcon,
+};
 
-const navigation = [
-  { label: 'Послуги', href: '#services' },
-  { label: 'Портфоліо', href: '#portfolio' },
-  { label: 'Процес', href: '#process' },
-  { label: 'FAQ', href: '#faq' },
-];
+const HEADING =
+  'font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase sm:text-xs';
+const LINK =
+  'inline-flex min-h-10 items-center lg:min-h-11 gap-3 text-text-muted transition-colors duration-200 hover:text-accent-yellow';
 
-type CopyStatus = 'idle' | 'copied' | 'error';
+const year = new Date().getFullYear();
+
+/** Копіювання з запасним варіантом для старих браузерів / http */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/** Комп'ютер = широкий екран + мишка/трекпад + не телефон і не планшет.
+    Усе інше (телефон, планшет, iPad із клавіатурою) — звичайний дзвінок. */
+const DESKTOP_MQ = '(min-width: 64rem) and (hover: hover) and (pointer: fine)';
+
+const isDesktop = () => {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const mobileUa =
+    /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|Kindle/i.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return !mobileUa && window.matchMedia(DESKTOP_MQ).matches;
+};
 
 export default function Contact() {
-  const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
-  const resetTimer = useRef<number | undefined>(undefined);
+  const phone = contacts.phone;
+  const [copied, setCopied] = useState(false);
+  const [desktop, setDesktop] = useState(isDesktop);
+  const timer = useRef<number | undefined>(undefined);
 
-  useEffect(
-    () => () => {
-      if (resetTimer.current !== undefined)
-        window.clearTimeout(resetTimer.current);
-    },
-    [],
-  );
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_MQ);
+    const update = () => setDesktop(isDesktop());
+    mq.addEventListener('change', update);
+    return () => {
+      mq.removeEventListener('change', update);
+      window.clearTimeout(timer.current);
+    };
+  }, []);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(PHONE);
-      setCopyStatus('copied');
-      if (resetTimer.current !== undefined)
-        window.clearTimeout(resetTimer.current);
-      resetTimer.current = window.setTimeout(() => setCopyStatus('idle'), 2200);
-    } catch {
-      setCopyStatus('error');
-      if (resetTimer.current !== undefined)
-        window.clearTimeout(resetTimer.current);
-      resetTimer.current = window.setTimeout(() => setCopyStatus('idle'), 3200);
-    }
+  /* Телефон: на смартфоні — дзвінок, на комп'ютері — копіюємо номер */
+  const onPhoneClick = async (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!desktop) return;
+    e.preventDefault();
+    const ok = await copyText(phone.href.replace(/^tel:/, ''));
+    if (!ok) return;
+    setCopied(true);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setCopied(false), 2200);
   };
 
   return (
-    <footer
+    <section
       id="contacts"
-      className="relative isolate overflow-hidden border-t border-white/[.07] bg-[#08080a] text-white select-none"
+      className="relative overflow-hidden border-t border-border-subtle bg-bg-elevated text-text-main"
     >
-      {/* Делікатне апаратне неонове сяйво на бекграунді без лагів */}
+      {/* Тонка жовта лінія-акцент зверху */}
       <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(50%_45%_at_100%_0%,rgba(255,238,0,.05),transparent_75%)]"
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-yellow/60 to-transparent"
       />
 
-      <div className="mx-auto max-w-7xl px-5 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-16 sm:px-8 sm:pt-20 lg:px-10 lg:pt-24">
-        {/* Монолітна сітка: Ліва частина ширша, щоб заголовок дихав і не перетинався з правим блоком */}
-        <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16 items-start">
-          {/* ЛІВА ЧАСТЬ: Брендинг, Опис та Навігація */}
-          <div className="flex flex-col items-start w-full">
-            <p className="inline-flex items-center gap-3 text-[11px] font-bold uppercase tracking-[.2em] text-[#ffee00]">
-              <span className="h-px w-7 bg-[#ffee00]/60" aria-hidden="true" />
-              SM Detailing · Dnipro
-            </p>
-
-            {/* Твій фірмовий заголовок-титан з адаптивним розміром під твій шрифт */}
-            <h2 className="font-display mt-5 w-full text-3xl sm:text-5xl lg:text-[4.2rem] font-black uppercase leading-[0.95] tracking-tight">
-              ЗВ'ЯЗОК <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffee00] via-white to-[#ffee00] bg-size-200 animate-gradient">
-                З НАМИ
-              </span>{' '}
-              <br />
-            </h2>
-
-            <p className="mt-6 max-w-md text-sm leading-7 text-[#a5a6ad] sm:text-base">
-              Від відновлення заводського блиску до преміального ультра-захисту
-              кузова. Ми знаємо, як повернути вашому автомобілю вигляд з
-              автосалону.
-            </p>
-
-            <nav
-              aria-label="Footer navigation"
-              className="mt-8 flex flex-wrap gap-x-6 gap-y-3"
+      <div className="container-site pt-8 sm:pt-12">
+        {/* Телефон великою кнопкою */}
+        <a
+          href={phone.href}
+          onClick={onPhoneClick}
+          aria-label={`${phone.label} ${phone.display}`}
+          className="clip-cut group flex items-center justify-between gap-4 bg-accent-yellow px-5 py-5 text-bg-main transition-transform duration-300 hover:-translate-y-1 active:scale-[0.99] sm:px-8 sm:py-7"
+        >
+          <span className="min-w-0">
+            <span
+              aria-live="polite"
+              className="block font-mono text-[0.65rem] font-bold tracking-widest uppercase opacity-70 sm:text-xs"
             >
-              {navigation.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="inline-flex min-h-11 items-center text-sm font-medium text-white/60 transition-colors hover:text-[#ffee00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffee00]"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
+              {desktop
+                ? copied
+                  ? contactSection.copiedLabel
+                  : contactSection.copyLabel
+                : contactSection.phoneLabel}
+            </span>
+            <span className="mt-1.5 block font-display text-[clamp(1.55rem,7.6vw,4rem)] leading-none font-black whitespace-nowrap tabular-nums">
+              {phone.display}
+            </span>
+          </span>
+          <span
+            aria-hidden
+            className="clip-cut-sm grid size-12 shrink-0 place-items-center bg-bg-main text-accent-yellow transition-transform duration-300 sm:size-14"
+          >
+            {desktop ? (
+              copied ? (
+                <CheckIcon weight="bold" className="size-6" />
+              ) : (
+                <CopyIcon weight="bold" className="size-6" />
+              )
+            ) : (
+              <ArrowUpIcon weight="bold" className="size-6 rotate-45" />
+            )}
+          </span>
+        </a>
+
+        <div className="mt-7 grid grid-cols-1 gap-y-7 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-[5rem_1fr_1.1fr_1.4fr] lg:gap-12">
+          {/* Лого (+ «нагору» на телефоні) */}
+          <div className="flex items-center justify-between gap-4 sm:col-span-3 lg:col-span-1 lg:block">
+            <a
+              href="#"
+              aria-label={`${brand.name}, нагору`}
+              className="block size-20"
+            >
+              <img
+                src={logoImg}
+                alt={brand.name}
+                width={80}
+                height={80}
+                loading="lazy"
+                className="h-full w-full object-contain"
+              />
+            </a>
+            <button
+              type="button"
+              aria-label={contactSection.upLabel}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="clip-cut-sm grid size-12 shrink-0 place-items-center border border-accent-yellow/50 text-accent-yellow transition-[background-color,color,transform] duration-200 hover:bg-accent-yellow hover:text-bg-main active:scale-90 lg:hidden"
+            >
+              <ArrowUpIcon aria-hidden weight="bold" className="size-5" />
+            </button>
           </div>
 
-          {/* ПРАВА ЧАСТЬ: Інтерактивний преміальний хаб */}
-          <div className="grid gap-3 sm:grid-cols-2 w-full">
-            {/* Картка 1: Гаряча лінія (на всю ширину блоку) */}
-            <section className="relative overflow-hidden rounded-[24px] border border-[#ffee00]/20 bg-[linear-gradient(120deg,rgba(255,238,0,.05),rgba(255,255,255,.015)_55%,rgba(255,238,0,.015))] p-5 sm:col-span-2 sm:p-6">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-start gap-4">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#ffee00] text-[#101010]">
-                    <Phone
-                      className="h-5 w-5"
-                      strokeWidth={2.5}
-                      aria-hidden="true"
-                    />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#ffee00]">
-                      СТУДІЯ НА ЗВ'ЯЗКУ
-                    </p>
+          {/* Розділи */}
+          <nav aria-label={contactSection.navLabel}>
+            <p className={HEADING}>{contactSection.navLabel}</p>
+            <ul className="mt-2 grid grid-cols-3 gap-x-3 sm:grid-cols-2 lg:grid-cols-1">
+              {navigation.map((item) => (
+                <li key={item.href}>
+                  <a href={item.href} className={LINK}>
+                    {item.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Месенджери */}
+          <div>
+            <p className={HEADING}>{contactSection.messengersLabel}</p>
+            <ul className="mt-2">
+              {messengers.map((c) => {
+                const Icon = ICONS[c.icon];
+                return (
+                  <li key={c.id}>
                     <a
-                      href={`tel:${PHONE}`}
-                      className="font-display mt-1 inline-flex min-h-9 items-center text-[clamp(1rem,3.5vw,1.375rem)] font-black tracking-tight text-white hover:text-[#ffee00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffee00]"
+                      href={c.href}
+                      target={c.external ? '_blank' : undefined}
+                      rel={c.external ? 'noopener noreferrer' : undefined}
+                      className={LINK}
                     >
-                      {FORMATTED_PHONE}
+                      <Icon
+                        aria-hidden
+                        weight="light"
+                        className="size-5 text-accent-yellow"
+                      />
+                      {c.display}
                     </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
-                    <p className="text-xs text-white/45 mt-0.5">
-                      Преміальний сервіс та запис за телефоном
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-black/20 px-4 text-sm font-semibold text-white transition-[transform,border-color] hover:-translate-y-0.5 hover:border-[#ffee00]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffee00] sm:w-auto active:scale-[0.98]"
-                >
-                  {copyStatus === 'copied' ? (
-                    <Check
-                      className="h-4 w-4 text-[#ffee00]"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Copy
-                      className="h-4 w-4 text-[#ffee00]"
-                      aria-hidden="true"
-                    />
-                  )}
-                  {copyStatus === 'copied' ? 'Скопійовано' : 'Копіювати'}
-                </button>
-              </div>
-            </section>
-
-            {/* Картка 2: Telegram Чат */}
-            <a
-              href={TELEGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex min-h-[112px] items-center justify-between gap-4 rounded-[22px] border border-white/[.09] bg-[#111114] p-5 transition-[transform,border-color] hover:-translate-y-0.5 hover:border-[#ffee00]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffee00] active:scale-[0.98]"
-            >
-              <span className="flex items-center gap-4">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#ffee00]/[.08] text-[#ffee00]">
-                  <Send
-                    className="h-[18px] w-[18px] translate-x-[-1px] translate-y-[1px]"
-                    aria-hidden="true"
-                  />
-                </span>
-                <span>
-                  <span className="block text-[10px] font-bold uppercase tracking-[.16em] text-white/40">
-                    ШВИДКИЙ ЧАТ
-                  </span>
-                  <span className="mt-1 block text-sm font-bold text-white group-hover:text-[#ffee00] transition-colors">
-                    Консультація в Telegram
-                  </span>
-                </span>
-              </span>
-              <ArrowUpRight
-                className="h-4 w-4 shrink-0 text-white/40 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </a>
-
-            {/* Картка 3: Instagram Профіль без зовнішніх пакетів */}
-            <a
-              href={INSTAGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex min-h-[112px] items-center justify-between gap-4 rounded-[22px] border border-white/[.09] bg-[#111114] p-5 transition-[transform,border-color] hover:-translate-y-0.5 hover:border-[#ffee00]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffee00] active:scale-[0.98] overflow-hidden relative"
-            >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-tr from-[#f9ce34]/3 via-[#ee2a7b]/5 to-[#6228d7]/5 transition-opacity duration-500 pointer-events-none" />
-              <span className="flex items-center gap-4 z-10">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#ffee00]/[.08] text-[#ffee00]">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-[18px] w-[18px]"
-                    aria-hidden="true"
+          {/* Де і коли */}
+          <div className="sm:col-span-1 lg:col-span-1">
+            <p className={HEADING}>{contactSection.whereLabel}</p>
+            <ul className="mt-3 grid gap-3 text-text-muted">
+              {locations.map((loc) => (
+                <li key={loc.id}>
+                  <a
+                    href={loc.mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-start gap-3 transition-colors duration-200 hover:text-accent-yellow"
                   >
-                    <rect x="3" y="3" width="18" height="18" rx="5" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle
-                      cx="17.5"
-                      cy="6.5"
-                      r=".8"
-                      fill="currentColor"
-                      stroke="none"
+                    <MapPinIcon
+                      aria-hidden
+                      weight="bold"
+                      className="mt-0.5 size-5 shrink-0 text-accent-yellow"
                     />
-                  </svg>
-                </span>
-                <span>
-                  <span className="block text-[10px] font-bold uppercase tracking-[.16em] text-white/40">
-                    НАШІ РОБОТИ
-                  </span>
-                  <span className="mt-1 block text-sm font-bold text-white group-hover:text-[#ffee00] transition-colors">
-                    Портфоліо в Instagram
-                  </span>
-                </span>
-              </span>
-              <ArrowUpRight
-                className="h-4 w-4 shrink-0 text-white/40 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 z-10"
-                aria-hidden="true"
-              />
-            </a>
-
-            {/* Картка 4: Локація на карті */}
-            <a
-              href={MAPS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex min-h-[100px] items-center justify-between gap-4 rounded-[22px] border border-white/[.09] bg-[#111114] p-5 transition-[transform,border-color] hover:-translate-y-0.5 hover:border-[#ffee00]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffee00] sm:col-span-2 active:scale-[0.98]"
-            >
-              <span className="flex min-w-0 items-center gap-4">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#ffee00]/[.08] text-[#ffee00]">
-                  <MapPin className="h-[18px] w-[18px]" aria-hidden="true" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[10px] font-bold uppercase tracking-[.16em] text-white/40">
-                    ЛОКАЦІЯ СТУДІЇ
-                  </span>
-                  <span className="mt-1 block truncate text-sm font-extrabold text-white sm:text-base">
-                    {ADDRESS}
-                  </span>
-                </span>
-              </span>
-              <span className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-2 text-xs font-bold uppercase tracking-[.1em] text-[#ffee00]">
-                Карта <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </span>
-            </a>
+                    <span>
+                      {loc.title}
+                      <span className="block text-sm text-text-dim transition-colors group-hover:text-accent-yellow/80">
+                        {loc.address}
+                      </span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+              <li className="flex items-start gap-3">
+                <ClockIcon
+                  aria-hidden
+                  weight="bold"
+                  className="mt-0.5 size-5 shrink-0 text-accent-yellow"
+                />
+                {business.workHours}
+              </li>
+            </ul>
           </div>
         </div>
 
-        {/* Копірайт подвал */}
-        <div className="mt-12 flex flex-col gap-3 border-t border-white/[.07] pt-6 text-xs text-white/40 sm:mt-16 sm:flex-row sm:items-center sm:justify-between">
-          <span>© 2026 SM Detailing. Всі права захищені.</span>
-          <span>Преміальний детейлінг · Дніпро, Україна</span>
+        {/* Права + розробник */}
+        <div className="mt-6 flex flex-col gap-1.5 border-t border-border-subtle py-4 font-mono text-[0.65rem] tracking-widest text-text-dim uppercase sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {brand.since}–{year} {brand.name}. {contactSection.rights}
+          </p>
+          <p>
+            {contactSection.developerLabel}{' '}
+            <a
+              href={developer.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-text-muted transition-colors duration-200 hover:text-accent-yellow"
+            >
+              {developer.name}
+            </a>
+          </p>
         </div>
       </div>
-    </footer>
+    </section>
   );
 }
