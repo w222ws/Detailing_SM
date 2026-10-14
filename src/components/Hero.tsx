@@ -1,26 +1,11 @@
 import { domAnimation, LazyMotion, m } from 'motion/react';
 import { site } from '../config/site';
+import { hero } from '../config/hero';
 import heroPhoto from '../assets/hero-bg.avif';
 
-/* ==========================================================================
-   HERO — фото без інтерактиву. Прибрали піну/протирання: воно вимагало
-   уваги замість того, щоб давати враження. Тепер фото просто ефектно
-   з'являється й ледь-ледь погойдується нон-стопом — як авто на поворотній
-   платформі в салоні. По рамці пробігає світло (utility .shine, уже є в
-   системі) — ніби лак щойно відполіровано.
-   Мобайл-фьорст: порядок перебудовується через contents/order (заголовок →
-   фото → абзац+кнопки), на lg: — стандартна двоколонкова сітка.
-   motion/react на LazyMotion — без зайвих анімацій, одне входження +
-   довга «дихаюча» петля, що поважає prefers-reduced-motion.
-   ========================================================================== */
+/* Головний екран. Тексти — у config/hero.ts. */
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
-
-/* Заголовок — по рядках, кожен «виїжджає» з-під маски */
-const HEADLINE = [
-  { text: 'ПРЕМІУМ ДЕТЕЙЛІНГ', accent: false },
-  { text: 'У ДНІПРІ', accent: true },
-] as const;
 
 function HeroPhoto() {
   return (
@@ -30,8 +15,7 @@ function HeroPhoto() {
       transition={{ duration: 1, ease: EASE_OUT_EXPO, delay: 0.1 }}
       className="relative"
     >
-      {/* Гойдання — чистий CSS (transform на композиторі): однаково в обидва
-          боки, з 3D-нахилом. Ніякого JS у кожному кадрі → без лагів. */}
+      {/* Гойдання — чистий CSS, transform на композиторі */}
       <div className="animate-(--animate-hero-sway) will-change-transform motion-reduce:animate-none">
         <div className="shine clip-cut relative aspect-[4/5] w-full overflow-hidden border border-border-subtle bg-carbon">
           <img
@@ -42,7 +26,6 @@ function HeroPhoto() {
             decoding="async"
             className="absolute inset-0 size-full object-cover"
           />
-          {/* Внутрішня жовта «кромка» — рамка кузова */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 border border-accent-yellow/20"
@@ -60,9 +43,7 @@ function Hero() {
         id="hero"
         className="relative flex w-full items-center overflow-hidden pt-24 pb-16 min-h-[88vh] lg:min-h-[92vh] lg:pt-32 lg:pb-24"
       >
-        {/* Фон: точки + рельєфні соти (проявляються біля «фари») + жовте
-            світло зверху-справа + затухання в чорне внизу. Усе приглушено,
-            щоб не перебивати заголовок і фото. */}
+        {/* Фон: точки, соти, затемнення, перехід у чорне внизу */}
         <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
           <div className="bg-grain absolute inset-0" />
           <div className="bg-honeycomb absolute inset-0" />
@@ -72,10 +53,10 @@ function Hero() {
 
         <div className="container-site relative z-10 w-full">
           <div className="flex flex-col gap-10 lg:grid lg:grid-cols-12 lg:items-center lg:gap-12">
-            {/* Текстовий блок — на мобілі розкладається через contents + order */}
+            {/* Текст: на мобілі порядок задають contents + order */}
             <div className="contents text-center lg:col-span-7 lg:block">
               <h1 className="order-1 font-display text-[3.1rem] leading-[0.95] text-text-main uppercase sm:text-7xl md:text-8xl lg:text-[6rem]">
-                {HEADLINE.map((line, li) => (
+                {hero.headline.map((line, li) => (
                   <span key={li} className="block overflow-hidden pb-[0.08em]">
                     <m.span
                       initial={{ y: '110%', opacity: 0 }}
@@ -104,9 +85,7 @@ function Hero() {
                   }}
                   className="mx-auto max-w-md text-base text-text-muted sm:text-lg"
                 >
-                  {site.brand.promise}. Керамічне покриття, антигравійна плівка
-                  PPF та ручне полірування —{' '}
-                  {site.business.workHours.toLowerCase()}.
+                  {hero.description}
                 </m.p>
                 <m.div
                   initial={{ opacity: 0, y: 14 }}
@@ -118,11 +97,11 @@ function Hero() {
                   }}
                   className="flex flex-wrap items-center justify-center gap-3 sm:gap-4"
                 >
-                  <a href="#contacts" className="btn-primary shine">
-                    Забронювати час
+                  <a href={hero.primaryCta.href} className="btn-primary shine">
+                    {hero.primaryCta.label}
                   </a>
-                  <a href="#works" className="btn-ghost">
-                    Наші роботи
+                  <a href={hero.secondaryCta.href} className="btn-ghost">
+                    {hero.secondaryCta.label}
                   </a>
                 </m.div>
               </div>

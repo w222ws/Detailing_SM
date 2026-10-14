@@ -1,9 +1,11 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { domAnimation, LazyMotion, m } from 'motion/react';
 import {
+  ArrowsHorizontalIcon,
   ArrowUpRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  QuotesIcon,
   StarIcon,
 } from '@phosphor-icons/react';
 import { reviews, type Review } from '../config/reviews';
@@ -12,14 +14,21 @@ import { locations } from '../config/locations';
 
 /* ==========================================================================
    #reviews — стопка відгуків, яку гортаєш пальцем.
-   Усі картки в одному стилі: скло (.glass) + clip-cut. Нічого зайвого —
-   аватар із літерою, ім'я, зірки, текст, модель авто. Під заголовком —
-   дві кнопки «залишити відгук» (по одній на адресу, дані з
-   config/locations.ts) і мала ланка на сторінку /review.
-   Механіка: тягнеш верхню картку вбік — вона відлітає й лягає вниз стопки.
-   Позиція під час перетягування пишеться прямо в DOM, без React-стану,
-   тому не лагає. Вертикальний свайп не перехоплюється — сторінка
-   скролиться як завжди.
+   • Велика контурна цифра за заголовком — чесна кількість відгуків
+     (не вигадана оцінка), той самий прийом, що й у «Наших роботах».
+   • Картка — clip-cut + border + bg-bg-elevated. Великий знак лапок у
+     кутку (декор), моно-тег «ВІДГУК 0X» замість бейджа платформи,
+     аватар-квадрат трохи «перекошений» на власний кут (id → tilt) —
+     стопка виглядає як купка реальних фотокарток, а не однакові плитки.
+   • Над стопкою — підказка «Перетягни картку» зі стрілками, гасне після
+     першого свайпу/тапу/кліку стрілки.
+   • Під стопкою — лічильник «01 / 06» + стрілки (десктоп), мобільний —
+     лише свайп.
+   Фон — хекс-контури у бренд-мові Works/Services/Process. Без glass.
+   Механіка стопки (fly/back/onDown/onMove/onUp) — як була: позиція під
+   час перетягування пишеться прямо в DOM, без React-стану, тому не
+   лагає. Вертикальний свайп не перехоплюється — сторінка скролиться як
+   завжди.
    ========================================================================== */
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -34,6 +43,15 @@ const reveal = (delay = 0) => ({
   transition: { duration: 0.7, delay, ease: EASE },
 });
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/* Стабільний «нахил» від id — аватари лежать не рівно, як фотокартки */
+const tilt = (id: string) => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 9;
+  return (h - 4) * 1.1;
+};
+
 /* Як лежать картки у стопці: верхня рівно, нижні — віялом */
 const REST = [
   'translate3d(0,0,0) rotate(0deg)',
@@ -42,46 +60,80 @@ const REST = [
 ];
 const REST_HIDDEN = 'translate3d(0,28px,0) scale(0.91)';
 
+/* Контур шестикутника для фону — тримає бренд-мову з інших секцій */
+function HexOutline({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 100 115.47"
+      preserveAspectRatio="none"
+      className={cx('pointer-events-none', className)}
+    >
+      <polygon
+        points="50,1 99,29.5 99,86 50,114.5 1,86 1,29.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
 /* -------------------- Картка відгуку -------------------- */
-function Card({ review }: { review: Review }) {
+function Card({ review, index }: { review: Review; index: number }) {
   const initial = review.name.trim().charAt(0).toUpperCase() || '?';
 
   return (
-    <figure className="glass clip-cut flex h-full flex-col p-5 shadow-card sm:p-7">
-      <figcaption className="flex items-center gap-3.5">
-        <span
-          aria-hidden
-          className="clip-cut-sm grid size-12 shrink-0 place-items-center bg-accent-yellow font-display text-lg font-black text-bg-main"
-        >
-          {initial}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-display text-base font-bold text-text-main uppercase sm:text-lg">
-            {review.name}
-          </span>
+    <figure className="clip-cut relative flex h-full flex-col overflow-hidden border border-border-subtle bg-bg-elevated p-5 shadow-card sm:p-7">
+      {/* Декоративний великий знак лапок у кутку */}
+      <QuotesIcon
+        aria-hidden
+        weight="fill"
+        className="pointer-events-none absolute -top-4 -right-4 size-28 text-accent-yellow/10 sm:-top-6 sm:-right-6 sm:size-36"
+      />
+
+      <figcaption className="relative flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3.5">
           <span
-            className="mt-1 flex gap-0.5 text-accent-yellow"
-            aria-label={`${review.rating} з 5`}
+            aria-hidden
+            style={{ transform: `rotate(${tilt(review.id)}deg)` }}
+            className="clip-cut-sm grid size-12 shrink-0 place-items-center bg-accent-yellow font-display text-lg font-black text-bg-main"
           >
-            {Array.from({ length: review.rating }, (_, i) => (
-              <StarIcon
-                key={i}
-                aria-hidden
-                weight="fill"
-                className="size-3.5"
-              />
-            ))}
+            {initial}
           </span>
+          <div className="min-w-0 flex-1">
+            <span className="block truncate font-display text-base font-bold text-text-main uppercase sm:text-lg">
+              {review.name}
+            </span>
+            <span
+              className="mt-1 flex gap-0.5 text-accent-yellow"
+              aria-label={`${review.rating} з 5`}
+            >
+              {Array.from({ length: review.rating }, (_, i) => (
+                <StarIcon
+                  key={i}
+                  aria-hidden
+                  weight="fill"
+                  className="size-3.5"
+                />
+              ))}
+            </span>
+          </div>
+        </div>
+        <span className="relative inline-flex shrink-0 items-center bg-accent-yellow/15 px-2 py-1 font-mono text-[0.6rem] font-bold tracking-widest text-accent-yellow uppercase">
+          Відгук {pad2(index + 1)}
         </span>
       </figcaption>
 
-      <blockquote className="mt-5 line-clamp-6 flex-1 text-sm leading-relaxed text-text-main select-none sm:text-base">
+      <span
+        aria-hidden
+        className="relative mt-5 block h-px w-full bg-linear-to-r from-accent-yellow/40 via-border-subtle to-transparent"
+      />
+
+      <blockquote className="relative mt-5 line-clamp-6 flex-1 text-sm leading-relaxed text-text-main select-none sm:text-base">
         {review.text}
       </blockquote>
-
-      <p className="mt-5 border-t border-border-subtle pt-4 font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase">
-        {review.car}
-      </p>
     </figure>
   );
 }
@@ -89,6 +141,7 @@ function Card({ review }: { review: Review }) {
 /* -------------------- Секція -------------------- */
 export function Reviews() {
   const [order, setOrder] = useState(() => reviews.map((_, i) => i));
+  const [interacted, setInteracted] = useState(false);
   const stack = useRef<HTMLDivElement>(null);
   const drag = useRef<{
     x: number;
@@ -107,6 +160,7 @@ export function Reviews() {
   const fly = (dir: 1 | -1) => {
     const card = topCard();
     if (!card || busy.current) return;
+    setInteracted(true);
     busy.current = true;
     card.style.transition = 'transform 0.3s ease-in';
     card.style.transform = `translate3d(${dir * window.innerWidth}px,0,0) rotate(${dir * 26}deg)`;
@@ -177,35 +231,59 @@ export function Reviews() {
     else if (e.key === 'ArrowLeft') fly(-1);
   };
 
+  const current = order[0] + 1;
+
   return (
     <LazyMotion features={domAnimation} strict>
       <section
         id="reviews"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон — як у розділі «Послуги»: ледь видимі контури зрізаних панелей
-            кузова (та сама форма clip-cut), жодних текстур */}
+        {/* Фон: хекс-контури, бренд-мова з інших секцій */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
         >
-          <div className="clip-cut absolute -top-12 -right-24 size-72 rotate-[10deg] border border-border-subtle/50 sm:size-[26rem]" />
-          <div className="clip-cut-sm absolute -bottom-12 -left-16 size-56 rotate-[-14deg] border border-accent-yellow/10 sm:size-80" />
-          <div className="clip-cut absolute top-1/2 left-[8%] hidden size-44 rotate-[20deg] border border-border-subtle/30 lg:block" />
-          <div className="clip-cut-sm absolute right-[6%] bottom-[18%] hidden size-32 rotate-[-18deg] border border-border-subtle/30 lg:block" />
+          <HexOutline className="absolute -top-10 -right-12 size-60 rotate-[10deg] text-border-subtle/50 sm:size-80" />
+          <HexOutline className="absolute -bottom-16 -left-12 size-56 -rotate-[14deg] text-accent-yellow/10 sm:size-72" />
+          <HexOutline className="absolute top-1/2 left-[8%] hidden size-40 rotate-[20deg] text-border-subtle/40 lg:block" />
+          <HexOutline className="absolute right-[6%] bottom-[14%] hidden size-28 -rotate-[18deg] text-border-subtle/50 lg:block" />
+          <HexOutline className="absolute top-[16%] left-[42%] hidden size-20 rotate-[30deg] text-accent-yellow/10 lg:block" />
+
+          {/* Тонкі жовті «пил-смуги» */}
+          <div className="absolute top-16 left-0 h-px w-24 bg-linear-to-r from-accent-yellow/50 to-transparent sm:w-40" />
+          <div className="absolute right-0 bottom-32 h-px w-24 bg-linear-to-l from-accent-yellow/40 to-transparent sm:w-40" />
         </div>
 
         <div className="container-site relative grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-          {/* Ліва колонка: заголовок + кнопки відгуку */}
+          {/* ========== Ліва колонка: заголовок + CTA ========== */}
           <div>
-            <m.h2
-              {...reveal()}
-              className="font-display text-4xl text-text-main uppercase sm:text-5xl lg:text-6xl"
-            >
-              Що кажуть <span className="text-accent-yellow">клієнти</span>
-            </m.h2>
+            <div className="relative">
+              {/* Велика контурна цифра — чесна кількість відгуків, не оцінка */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-2 right-0 z-0 hidden font-display font-black text-transparent uppercase select-none sm:block [-webkit-text-stroke:1px_var(--color-border-strong)]"
+                style={{ fontSize: 'clamp(4rem, 9vw, 7rem)', lineHeight: 0.75 }}
+              >
+                {pad2(reviews.length)}
+              </span>
+              <m.h2
+                {...reveal()}
+                className="relative z-10 font-display text-4xl text-text-main uppercase sm:text-5xl lg:text-6xl"
+              >
+                Що кажуть <span className="text-accent-yellow">клієнти</span>
+              </m.h2>
+            </div>
 
-            <m.div {...reveal(0.1)} className="mt-8 lg:mt-10">
+            <m.p
+              {...reveal(0.08)}
+              className="relative z-10 mt-4 max-w-sm text-sm text-text-muted sm:text-base"
+            >
+              {reviews.length} реальних відгуків від наших клієнтів — гортай
+              стопку праворуч.
+            </m.p>
+
+            <m.div {...reveal(0.15)} className="relative z-10 mt-8 lg:mt-10">
               <p className="font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase sm:text-xs">
                 Залишити відгук
               </p>
@@ -216,15 +294,10 @@ export function Reviews() {
                     href={loc.reviewUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="glass clip-cut group flex items-center justify-between gap-4 p-4 shadow-card transition-transform duration-300 hover:-translate-y-1 active:scale-[0.99] sm:p-5"
+                    className="clip-cut group flex items-center justify-between gap-4 border border-border-subtle bg-bg-elevated p-4 shadow-card transition-colors duration-200 hover:border-accent-yellow active:scale-[0.99] sm:p-5"
                   >
-                    <span className="min-w-0">
-                      <span className="block truncate font-display text-sm font-bold text-text-main uppercase sm:text-base">
-                        {loc.title}
-                      </span>
-                      <span className="mt-1 block truncate font-mono text-[0.65rem] tracking-wider text-text-muted uppercase">
-                        {loc.address}
-                      </span>
+                    <span className="min-w-0 truncate font-display text-sm font-bold text-text-main uppercase sm:text-base">
+                      {loc.address}
                     </span>
                     <span
                       aria-hidden
@@ -249,33 +322,26 @@ export function Reviews() {
                 />
               </a>
             </m.div>
-
-            {/* Гортання для десктопа */}
-            <m.div
-              {...reveal(0.15)}
-              className="mt-8 hidden items-center gap-2 lg:flex"
-            >
-              <button
-                type="button"
-                onClick={() => fly(-1)}
-                aria-label="Попередній відгук"
-                className="clip-cut-sm grid size-11 place-items-center border border-border-strong text-text-main transition-colors hover:border-accent-yellow hover:text-accent-yellow"
-              >
-                <CaretLeftIcon aria-hidden weight="bold" className="size-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => fly(1)}
-                aria-label="Наступний відгук"
-                className="clip-cut-sm grid size-11 place-items-center border border-border-strong text-text-main transition-colors hover:border-accent-yellow hover:text-accent-yellow"
-              >
-                <CaretRightIcon aria-hidden weight="bold" className="size-5" />
-              </button>
-            </m.div>
           </div>
 
-          {/* Права колонка: стопка */}
+          {/* ========== Права колонка: стопка карток + лічильник ========== */}
           <m.div {...reveal(0.1)}>
+            {/* Підказка «тягни» — гасне після першого свайпу/тапу/кліку стрілки */}
+            <div
+              aria-hidden
+              className={cx(
+                'mx-auto mb-3 flex w-full max-w-md items-center gap-2 font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase transition-opacity duration-500',
+                interacted ? 'opacity-0' : 'opacity-100',
+              )}
+            >
+              <ArrowsHorizontalIcon
+                aria-hidden
+                weight="bold"
+                className="size-3.5 text-accent-yellow"
+              />
+              Перетягни картку
+            </div>
+
             <div
               ref={stack}
               role="group"
@@ -287,7 +353,7 @@ export function Reviews() {
               onPointerMove={onMove}
               onPointerUp={onUp}
               onPointerCancel={onCancel}
-              className="relative mx-auto h-[24rem] w-full max-w-md cursor-grab select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-yellow active:cursor-grabbing sm:h-[26rem] lg:h-[28rem]"
+              className="relative mx-auto h-[26rem] w-full max-w-md cursor-grab select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-yellow active:cursor-grabbing sm:h-[28rem] lg:h-[30rem]"
             >
               {order.map((cardIndex, pos) => (
                 <div
@@ -302,9 +368,41 @@ export function Reviews() {
                     zIndex: reviews.length - pos,
                   }}
                 >
-                  <Card review={reviews[cardIndex]} />
+                  <Card review={reviews[cardIndex]} index={cardIndex} />
                 </div>
               ))}
+            </div>
+
+            {/* Лічильник + стрілки під стопкою */}
+            <div className="mx-auto mt-6 flex w-full max-w-md items-center gap-4">
+              <span className="font-mono text-sm font-bold tracking-widest uppercase">
+                <span className="text-accent-yellow">{pad2(current)}</span>
+                <span className="mx-1 text-text-dim">/</span>
+                <span className="text-text-muted">{pad2(reviews.length)}</span>
+              </span>
+              <span aria-hidden className="h-px flex-1 bg-border-subtle" />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fly(-1)}
+                  aria-label="Попередній відгук"
+                  className="clip-cut-sm grid size-10 place-items-center border border-border-strong text-text-main transition-colors hover:border-accent-yellow hover:text-accent-yellow"
+                >
+                  <CaretLeftIcon aria-hidden weight="bold" className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fly(1)}
+                  aria-label="Наступний відгук"
+                  className="clip-cut-sm grid size-10 place-items-center border border-border-strong text-text-main transition-colors hover:border-accent-yellow hover:text-accent-yellow"
+                >
+                  <CaretRightIcon
+                    aria-hidden
+                    weight="bold"
+                    className="size-4"
+                  />
+                </button>
+              </div>
             </div>
           </m.div>
         </div>

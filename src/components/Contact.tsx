@@ -239,12 +239,7 @@ export default function Contact() {
                       weight="bold"
                       className="mt-0.5 size-5 shrink-0 text-accent-yellow"
                     />
-                    <span>
-                      {loc.title}
-                      <span className="block text-sm text-text-dim transition-colors group-hover:text-accent-yellow/80">
-                        {loc.address}
-                      </span>
-                    </span>
+                    <span>{loc.address}</span>
                   </a>
                 </li>
               ))}

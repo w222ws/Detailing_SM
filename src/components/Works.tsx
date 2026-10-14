@@ -9,7 +9,6 @@ import {
 import { domAnimation, LazyMotion, m, type Variants } from 'motion/react';
 import {
   ArrowsHorizontalIcon,
-  ArrowsOutSimpleIcon,
   CaretLeftIcon,
   CaretRightIcon,
   XIcon,
@@ -19,10 +18,11 @@ import { compare, gallery } from '../config/works';
 /* ==========================================================================
    #works — «Наші роботи». Два блоки: повзунок ДО/ПІСЛЯ + галерея-соти.
    • Повзунок — transform-only, без лагів (див. Compare).
-   • Галерея — фото в шестикутниках, що вкладаються як справжні соти,
-     з порожніми контурами навколо (див. Honeycomb). Клік — лайтбокс на
-     весь екран: свайп на телефоні, ←/→/Esc на десктопі, лічильник 03/08.
-   Фото беруться з config/works.ts (файли лежать у public/works/).
+   • Галерея — фото в скляних шестикутниках, що вкладаються як справжні
+     соти; по краях — порожні скляні й «медові» комірки (див. Honeycomb).
+     Клік — лайтбокс на весь екран: свайп на телефоні, ←/→/Esc на
+     десктопі, лічильник 03/08.
+   Фото беруться з config/works.ts (src/assets/works/).
    ========================================================================== */
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -59,6 +59,35 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
    Керування: палець/миша по всій картці (клік — стрибок лінії), Pointer
    Events + pointer capture; вертикальний свайп лишається скролом сторінки.
    З клавіатури: ← → (±5), Home / End. */
+const BRACKETS = [
+  'top-4 left-4 border-t-2 border-l-2',
+  'top-4 right-4 border-t-2 border-r-2',
+  'bottom-4 left-4 border-b-2 border-l-2',
+  'bottom-4 right-4 border-b-2 border-r-2',
+];
+
+/* Декоративний контур шестикутника для фону розділу: тонка лінія, що
+   не блимає й не гальмує (SVG, non-scaling-stroke). Клас керує розміром
+   і кольором через currentColor. */
+function HexOutline({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 100 115.47"
+      preserveAspectRatio="none"
+      className={cx('pointer-events-none', className)}
+    >
+      <polygon
+        points="50,1 99,29.5 99,86 50,114.5 1,86 1,29.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
 function Compare({ before, after }: { before: string; after: string }) {
   const box = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLSpanElement>(null);
@@ -113,13 +142,14 @@ function Compare({ before, after }: { before: string; after: string }) {
       ref={box}
       onPointerDown={onDown}
       onPointerMove={onMove}
-      className="clip-cut relative [--pos:50%] aspect-[4/3] cursor-ew-resize overflow-hidden bg-carbon shadow-card select-none [touch-action:pan-y] sm:aspect-[16/10] lg:aspect-[21/10]"
+      className="clip-cut relative [--pos:50%] aspect-[4/3] cursor-ew-resize overflow-hidden bg-carbon shadow-card select-none [touch-action:pan-y] sm:aspect-[16/10] lg:aspect-[16/9]"
     >
       <img
         src={after}
         alt="Після роботи"
         draggable={false}
         decoding="async"
+        fetchPriority="high"
         className="pointer-events-none absolute inset-0 size-full object-cover"
       />
 
@@ -133,9 +163,26 @@ function Compare({ before, after }: { before: string; after: string }) {
           alt=""
           draggable={false}
           decoding="async"
+          loading="lazy"
           className="cmp-window-img absolute inset-0 size-full object-cover"
         />
       </div>
+
+      {/* Віньєтка + відблиск скла + «візир» по кутах кадру */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgb(255_255_255/0.12),transparent_30%),radial-gradient(ellipse_at_center,transparent_55%,rgb(7_7_10/0.6))]"
+      />
+      {BRACKETS.map((b) => (
+        <span
+          key={b}
+          aria-hidden
+          className={cx(
+            'pointer-events-none absolute size-5 border-accent-yellow sm:size-8',
+            b,
+          )}
+        />
+      ))}
 
       {/* Лінія + шильдик */}
       <div className="cmp-line pointer-events-none absolute inset-0">
@@ -172,14 +219,16 @@ function Compare({ before, after }: { before: string; after: string }) {
   );
 }
 
-/* -------------------- HONEYCOMB: фото в шестикутниках --------------------
+/* -------------------- HONEYCOMB: скляні соти --------------------
    Галерея — справжні соти: ряди чергуються (n, n−1 плиток) і вкладаються
-   одна в одну. Фото в жовтих рамках на тлі наших сот (bg-honeycomb);
-   відсутня комірка в хвості останнього ряду — тільки контур.
-   Уся геометрія — у index.css (clip-hex, hex-comb, hex-row, hex-cell):
-   розмір плитки рахується з ширини блоку через container query, React
-   лише каже, скільки плиток у ряду (--n). Фото беруться з works.ts.
-   Лише clip-path + transform + колір: без фільтрів і blur → без лагів. */
+   одна в одну. Кожне фото — під «склом»: світла фаска по краю, відблиск,
+   внутрішня грань і ліхтарик під курсором; на hover обідок стає жовтим.
+   Непарні ряди обрамлені порожніми скляними комірками, що виходять за
+   сітку, — соти ніби тягнуться далі. Порожні комірки двох видів:
+   прозоре скло (крізь нього видно фонові соти) і «мед» — бурштинове.
+   Геометрія — в index.css (clip-hex, hex-comb, hex-row, hex-cell),
+   React лише каже, скільки плиток у ряду (--n). Скло — градієнти й SVG,
+   без backdrop-filter → без лагів. Фото беруться з works.ts. */
 
 /* Скільки плиток у «довгому» ряду: телефон 2, планшет 3, десктоп 5 */
 function useCols() {
@@ -202,30 +251,104 @@ function useCols() {
   return n;
 }
 
-/* Порожня комірка в хвості останнього ряду — тільки контур (фон-соти
-   просвічують), щоб ряд виглядав добудованим */
-function Ghost({ dot }: { dot?: boolean }) {
+/* Шестикутник у координатах 100 × 115.47 (обвід і внутрішня грань) */
+const HEX = '50,0.8 99.2,29.2 99.2,86.3 50,114.7 0.8,86.3 0.8,29.2';
+const BEVEL = '50,4 96.5,30.9 96.5,84.6 50,111.5 3.5,84.6 3.5,30.9';
+
+/* Градієнти скла — один раз на всю галерею */
+function GlassDefs() {
   return (
-    <div aria-hidden className="hex-cell">
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute size-0 overflow-hidden"
+    >
+      <defs>
+        <linearGradient id="wk-rim" x1="0" y1="0" x2="0.7" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.6" />
+          <stop offset="0.3" stopColor="#fff" stopOpacity="0.12" />
+          <stop offset="0.65" stopColor="#fff" stopOpacity="0.05" />
+          <stop offset="1" stopColor="#fff500" stopOpacity="0.45" />
+        </linearGradient>
+        <linearGradient id="wk-bevel" x1="0" y1="0" x2="0.7" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.4" />
+          <stop offset="0.45" stopColor="#fff" stopOpacity="0" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0.14" />
+        </linearGradient>
+        <linearGradient id="wk-sheen" x1="0" y1="0" x2="0.55" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.2" />
+          <stop offset="0.38" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="wk-clear" x1="0" y1="0" x2="0.4" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.09" />
+          <stop offset="0.45" stopColor="#fff" stopOpacity="0.02" />
+          <stop offset="1" stopColor="#0c0d11" stopOpacity="0.75" />
+        </linearGradient>
+        <linearGradient id="wk-honey" x1="0" y1="0" x2="0.4" y2="1">
+          <stop offset="0" stopColor="#ffff7a" stopOpacity="0.3" />
+          <stop offset="0.5" stopColor="#fff500" stopOpacity="0.06" />
+          <stop offset="1" stopColor="#c7c000" stopOpacity="0.2" />
+        </linearGradient>
+        <radialGradient id="wk-glow" cx="0.5" cy="0.82" r="0.55">
+          <stop offset="0" stopColor="#fff500" stopOpacity="0.38" />
+          <stop offset="1" stopColor="#fff500" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* Внутрішня грань скла — тонка лінія паралельно краю */
+function Bevel() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 100 115.47"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 size-full"
+    >
+      <polygon
+        points={BEVEL}
+        fill="none"
+        stroke="url(#wk-bevel)"
+        strokeWidth="1"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+/* Порожня скляна комірка: прозора або «з медом»; крайові — тьмяніші */
+function Glass({ honey, edge }: { honey?: boolean; edge?: boolean }) {
+  return (
+    <div aria-hidden className={cx('hex-cell', edge && 'opacity-55')}>
       <svg
         viewBox="0 0 100 115.47"
         preserveAspectRatio="none"
-        className="absolute inset-0 size-full text-border-strong"
+        className="absolute inset-0 size-full"
       >
         <polygon
-          points="50,1 99,29.5 99,86 50,114.5 1,86 1,29.5"
-          fill="none"
-          stroke="currentColor"
+          points={HEX}
+          fill={honey ? 'url(#wk-honey)' : 'url(#wk-clear)'}
+          stroke="url(#wk-rim)"
           strokeWidth="1.5"
           vectorEffect="non-scaling-stroke"
         />
+        {honey && <polygon points={HEX} fill="url(#wk-glow)" />}
+        <polygon points={HEX} fill="url(#wk-sheen)" />
       </svg>
-      {dot && (
-        <span className="clip-hex absolute top-1/2 left-1/2 aspect-[0.866] w-[18%] -translate-x-1/2 -translate-y-1/2 bg-accent-yellow/70" />
-      )}
+      <Bevel />
     </div>
   );
 }
+
+/* Ліхтарик під курсором: позиція в CSS-змінних, рух — transform */
+const onLight = (e: PointerEvent<HTMLButtonElement>) => {
+  if (e.pointerType !== 'mouse') return;
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+  el.style.setProperty('--my', `${e.clientY - r.top}px`);
+};
 
 function Honeycomb({
   photos,
@@ -236,7 +359,7 @@ function Honeycomb({
 }) {
   const n = useCols();
 
-  /* Ряди: n, n−1, n, n−1 … Хвіст останнього ряду добиваємо контурами */
+  /* Ряди: n, n−1, n, n−1 … Хвіст останнього ряду — порожнє скло */
   const rows: Array<{ odd: boolean; cells: Array<number | null> }> = [];
   for (let idx = 0, r = 0; idx < photos.length; r++) {
     const odd = r % 2 === 1;
@@ -247,56 +370,71 @@ function Honeycomb({
   }
 
   return (
-    <div style={{ '--n': n } as CSSProperties} className="hex-comb">
-      {rows.map((row, r) => (
-        <div key={r} className={cx('hex-row', row.odd && 'hex-row-odd')}>
-          {row.cells.map((photo, k) =>
-            photo === null ? (
-              <Ghost key={`g${k}`} dot={(r + k) % 2 === 0} />
-            ) : (
-              <m.div
-                key={photos[photo]}
-                className="hex-cell"
-                initial={{ opacity: 0, scale: 0.86 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{
-                  duration: 0.6,
-                  delay: (k % 5) * 0.06,
-                  ease: EASE,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => onOpen(photo)}
-                  aria-label={`Відкрити фото ${photo + 1}`}
-                  className="clip-hex group absolute inset-0 bg-accent-yellow/75 outline-none transition-colors duration-300 hover:bg-accent-yellow focus-visible:bg-accent-yellow"
+    <>
+      <GlassDefs />
+      <div style={{ '--n': n } as CSSProperties} className="hex-comb">
+        {rows.map((row, r) => (
+          <div key={r} className={cx('hex-row', row.odd && 'hex-row-odd')}>
+            {row.cells.map((photo, k) =>
+              photo === null ? (
+                <Glass key={`g${k}`} honey={(r + k) % 2 === 1} />
+              ) : (
+                <m.div
+                  key={photos[photo]}
+                  className="hex-cell group/cell"
+                  initial={{ opacity: 0, scale: 0.86 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{
+                    duration: 0.6,
+                    delay: (k % 5) * 0.06,
+                    ease: EASE,
+                  }}
                 >
-                  <span className="clip-hex absolute inset-[3px] overflow-hidden bg-carbon">
-                    <img
-                      src={photos[photo]}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      draggable={false}
-                      className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
-                    />
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 grid place-items-center bg-bg-main/45 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
-                    >
-                      <span className="clip-hex grid size-10 place-items-center bg-accent-yellow text-bg-main">
-                        <ArrowsOutSimpleIcon weight="bold" className="size-4" />
+                  <button
+                    type="button"
+                    onClick={() => onOpen(photo)}
+                    onPointerMove={onLight}
+                    aria-label={`Відкрити фото ${photo + 1}`}
+                    className="hex-btn glass-rim clip-hex group absolute inset-0 outline-none"
+                  >
+                    <span className="clip-hex absolute inset-[2px] overflow-hidden bg-bg-card">
+                      <img
+                        src={photos[photo]}
+                        alt=""
+                        loading={photo < 3 ? 'eager' : 'lazy'}
+                        decoding="async"
+                        draggable={false}
+                        className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      />
+                      <span
+                        aria-hidden
+                        className="glass-sheen absolute inset-0"
+                      />
+                      <span aria-hidden className="hex-light" />
+                      <span
+                        aria-hidden
+                        className="absolute inset-x-0 bottom-[14%] text-center font-mono text-xs font-bold tracking-[0.3em] text-accent-yellow opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+                      >
+                        {pad2(photo + 1)}
                       </span>
                     </span>
-                  </span>
-                </button>
-              </m.div>
-            ),
-          )}
-        </div>
-      ))}
-    </div>
+                    <Bevel />
+                    <span
+                      aria-hidden
+                      className="hex-shimmer"
+                      style={
+                        { '--d': `${r * 0.9 + k * 0.45}s` } as CSSProperties
+                      }
+                    />
+                  </button>
+                </m.div>
+              ),
+            )}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -362,14 +500,18 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
           <div
             key={src}
             onClick={(e) => e.target === e.currentTarget && onClose()}
-            className="grid size-full shrink-0 snap-center place-items-center px-3 py-16 sm:px-16"
+            className="grid size-full shrink-0 snap-center place-items-center px-3 py-14 sm:px-16"
           >
-            <img
-              src={src}
-              alt={`Робота ${i + 1}`}
-              decoding="async"
-              className="clip-cut-sm max-h-full max-w-full object-contain"
-            />
+            {/* Фіксована рамка 4:3 — усі фото показуємо однаково, однакова висота на будь-якому екрані */}
+            <div className="clip-cut-sm relative aspect-[4/3] w-full max-w-5xl overflow-hidden bg-bg-elevated">
+              <img
+                src={src}
+                alt={`Робота ${i + 1}`}
+                decoding="async"
+                loading={Math.abs(i - start) <= 1 ? 'eager' : 'lazy'}
+                className="absolute inset-0 size-full object-contain"
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -423,6 +565,7 @@ export function Works() {
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
         {/* Фон — наші соти (bg-honeycomb) з м'яким переходом у сусідні розділи */}
+        {/* Фон — наші соти (bg-honeycomb) з м'яким переходом у сусідні розділи */}
         <div
           aria-hidden
           className="bg-honeycomb pointer-events-none absolute inset-0"
@@ -436,41 +579,44 @@ export function Works() {
           className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-bg-main via-bg-main/60 to-transparent"
         />
 
+        {/* Фон: контури сот під різними кутами — продовжують паттерн розділу */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 select-none"
+        >
+          <HexOutline className="absolute top-16 -left-10 size-56 rotate-[8deg] text-border-subtle/60 sm:size-72" />
+          <HexOutline className="absolute top-10 right-[8%] hidden size-40 -rotate-[12deg] text-accent-yellow/15 lg:block" />
+          <HexOutline className="absolute right-[-3rem] bottom-[18%] size-48 rotate-[18deg] text-border-subtle/40 sm:size-72" />
+          <HexOutline className="absolute bottom-6 left-[12%] hidden size-36 -rotate-[6deg] text-accent-yellow/10 lg:block" />
+          <HexOutline className="absolute top-[48%] left-[-4rem] hidden size-64 rotate-[22deg] text-border-subtle/30 lg:block" />
+        </div>
+
         <div className="container-site relative">
           <m.h2
-            variants={titleList}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-60px' }}
+            {...reveal()}
             className="font-display text-4xl text-text-main uppercase sm:text-5xl lg:text-6xl"
           >
-            {['Наші', 'роботи'].map((word, i) => (
-              <span
-                key={word}
-                className="mr-[0.25em] inline-block overflow-hidden pb-[0.08em] align-bottom last:mr-0"
-              >
-                <m.span
-                  variants={titleWord}
-                  className={cx(
-                    'inline-block',
-                    i === 1 && 'text-accent-yellow',
-                  )}
-                >
-                  {word}
-                </m.span>
-              </span>
-            ))}
+            Наші <span className="text-accent-yellow">роботи</span>
           </m.h2>
+
           {compare && (
-            <m.div {...reveal(0.15)} className="mt-10 lg:mt-14">
-              <Compare before={compare.before} after={compare.after} />
+            <m.div
+              {...reveal(0.15)}
+              className="mt-10 lg:mx-auto lg:mt-14 lg:max-w-3xl"
+            >
+              <div className="glass-frame clip-cut shadow-card">
+                <Compare before={compare.before} after={compare.after} />
+              </div>
             </m.div>
           )}
 
           {gallery.length > 0 && (
             <m.div
               {...reveal(0.1)}
-              className={compare ? 'mt-12 lg:mt-16' : 'mt-10 lg:mt-14'}
+              className={cx(
+                'hex-stage',
+                compare ? 'mt-14 lg:mt-20' : 'mt-10 lg:mt-14',
+              )}
             >
               <Honeycomb photos={gallery} onOpen={setOpen} />
             </m.div>

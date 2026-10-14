@@ -1,10 +1,3 @@
-/**
- * ПОСЛУГИ І ЦІНИ — розділ #services.
- * Чистий прайс-лист: назва, короткий опис, ціна. Без категорій і перемикачів —
- * вони не додавали користі, тільки займали місце.
- * Ціни в доларах — за курсом НБУ на день звернення (матеріали імпортні).
- */
-
 export interface Service {
   id: string;
   title: string;
@@ -56,7 +49,6 @@ export const services: Service[] = [
     summary: 'Міцніший і довговічніший захист лаку, ніж класична кераміка',
     currency: 'USD',
     priceFrom: 300,
-    featured: true,
   },
   {
     id: 'ceramic',
@@ -64,14 +56,15 @@ export const services: Service[] = [
     summary: 'Глибокий блиск і гідрофобний захист лаку на роки',
     currency: 'USD',
     priceFrom: 300,
-    featured: true,
   },
   {
     id: 'ppf',
     title: 'Антигравійна плівка',
-    summary: 'Фізичний захист кузова від сколів, піску та дрібних ударів',
+    summary:
+      'Фізичний захист кузова від сколів, піску та дрібних ударів — обираємо зону й пакет під авто',
     currency: 'USD',
-    individual: true,
+    priceFrom: 350,
+    featured: true,
   },
   {
     id: 'antichrome',

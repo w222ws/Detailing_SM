@@ -3,7 +3,7 @@
  * Джерело правди для кнопок «залишити відгук» (розділ #reviews),
  * а далі — для #contacts і футера.
  *
- * TODO: підставити реальні назви, адреси та посилання.
+ * TODO: підставити реальні адреси та посилання.
  * • mapUrl — картка студії в Google Maps.
  * • reviewUrl — пряме посилання на форму відгуку цієї студії:
  *   https://search.google.com/local/writereview?placeid=<PLACE_ID>
@@ -11,9 +11,7 @@
 
 export interface Location {
   id: string;
-  /** Коротка назва студії — великим шрифтом на кнопці */
-  title: string;
-  /** Повна адреса — дрібним mono під назвою */
+  /** Повна адреса студії — показується як є, одним рядком */
   address: string;
   mapUrl: string;
   reviewUrl: string;
@@ -22,16 +20,14 @@ export interface Location {
 export const locations: Location[] = [
   {
     id: 'studio-1',
-    title: 'Перша студія',
-    address: 'вул. Назва, 00',
-    mapUrl: '#',
-    reviewUrl: '#',
+    address: 'м. Дніпро, вул. Петра Бикова, 16',
+    mapUrl: 'https://share.google/zA935sGCswqAomINV',
+    reviewUrl: 'https://g.page/r/CV2yqUAJQ90YEAE/review',
   },
   {
     id: 'studio-2',
-    title: 'Друга студія',
-    address: 'вул. Назва, 00',
-    mapUrl: '#',
-    reviewUrl: '#',
+    address: 'м. Дніпро, вул. Мольєра, 1',
+    mapUrl: 'https://share.google/wsravT6X8Zxh237ik',
+    reviewUrl: 'https://g.page/r/CUBq-ThwkJYDEAE/review',
   },
 ];

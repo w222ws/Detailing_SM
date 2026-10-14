@@ -20,6 +20,6 @@ export const contactSection = {
 
 /** Розробник сайту (лише текст, без іконки). Встав свій нік і посилання. */
 export const developer = {
-  name: '@your_telegram',
-  href: 'https://t.me/your_telegram',
+  name: 'Tarasov Kyrylo',
+  href: 'https://t.me/off044',
 } as const;

@@ -1,17 +1,22 @@
-/** Номер у міжнародному форматі, без пробілів: +380XXXXXXXXX */
+/* Контакти, бренд, графік і навігація — єдине джерело правди.
+   Змінюєш тут — оновлюється по всьому сайту. Тексти розділів — у своїх
+   файлах поруч (hero.ts, services.ts, faq.ts, contact.ts тощо). */
+
+/* ---------- Сирі значення: міняти тільки їх ---------- */
+
+/** Номер без пробілів: +380XXXXXXXXX */
 const PHONE_E164 = '+380973624845';
 /** Як номер виглядає на сайті */
 const PHONE_DISPLAY = '+38 (097) 362-48-45';
 
-/** Нік у Telegram без @ */
-const TELEGRAM_USERNAME = 'EvtushenkoJenya';
-/** Повне посилання на Instagram — саме так, як дав клієнт
- *  (містить службовий параметр vrfl, тому не збираємо з username). */
+const TELEGRAM_PHONE = '+380973624845';
+
+/** Посилання на Instagram — як дав клієнт (із службовим параметром) */
 const INSTAGRAM_URL =
   'https://www.instagram.com/detailing_s.m?vrfl=MXdlNHZtZXp4eXRyNQ==';
-/** Нік для підпису в UI, береться з самого посилання вище */
 const INSTAGRAM_HANDLE = 'detailing_s.m';
-/** Номер для WhatsApp, зазвичай той самий, що й телефон */
+
+/** Номер для WhatsApp (зазвичай той самий) */
 const WHATSAPP_E164 = PHONE_E164;
 
 const SITE_URL = 'https://detailing-sv.com.ua';
@@ -19,21 +24,22 @@ const SITE_URL = 'https://detailing-sv.com.ua';
 /** "+380973624845" → "380973624845" (для wa.me потрібні лише цифри) */
 const digitsOnly = (value: string) => value.replace(/\D/g, '');
 
+/* ---------- Контакти ---------- */
+
 export type ContactId = 'phone' | 'telegram' | 'instagram' | 'whatsapp';
 
 export interface Contact {
   id: ContactId;
-  /** Назва для підписів і aria-label */
+  /** Підпис для aria-label */
   label: string;
-  /** Що показуємо користувачу */
+  /** Що бачить користувач */
   display: string;
-  /** Куди веде посилання */
   href: string;
-  /** Чи відкривати в новій вкладці (для месенджерів — так) */
+  /** Відкривати в новій вкладці */
   external: boolean;
   /** Назва іконки з @phosphor-icons/react */
   icon: 'PhoneCall' | 'TelegramLogo' | 'InstagramLogo' | 'WhatsappLogo';
-  /** Для кольорового ховера, якщо захочемо фірмові кольори месенджерів */
+  /** Фірмовий колір месенджера */
   tint: string;
 }
 
@@ -50,8 +56,8 @@ export const contacts: Record<ContactId, Contact> = {
   telegram: {
     id: 'telegram',
     label: 'Написати в Telegram',
-    display: `@${TELEGRAM_USERNAME}`,
-    href: `https://t.me/${TELEGRAM_USERNAME}`,
+    display: `${TELEGRAM_PHONE}`,
+    href: `https://t.me/${TELEGRAM_PHONE}`,
     external: true,
     icon: 'TelegramLogo',
     tint: '#29a9eb',
@@ -76,7 +82,7 @@ export const contacts: Record<ContactId, Contact> = {
   },
 };
 
-/** Порядок, у якому контакти показуються в UI */
+/** Усі контакти в порядку показу */
 export const contactList: Contact[] = [
   contacts.phone,
   contacts.telegram,
@@ -84,44 +90,32 @@ export const contactList: Contact[] = [
   contacts.whatsapp,
 ];
 
-/** Тільки месенджери — для рядка іконок у хедері/футері */
+/** Лише месенджери (хедер, контакти) */
 export const messengers: Contact[] = [
   contacts.telegram,
   contacts.instagram,
   contacts.whatsapp,
 ];
 
-/* ==========================================================================
-   3. БРЕНД
-   ========================================================================== */
+/* ---------- Бренд і бізнес ---------- */
 
 export const brand = {
   name: 'Detailing SM',
-  /** Коротко, великими — в хедері та футері */
   short: 'SM',
   tagline: 'Студія преміум детейлінгу',
-  /** Рядок під H1 у хіро */
-  promise: 'Повертаємо авто стан «з салону» — і тримаємо його роками',
   city: 'Дніпро',
   url: SITE_URL,
-  /** Рік заснування — для футера «© 2019–2026» */
+  /** Рік заснування — для «© 2019–2026» */
   since: 2019,
 } as const;
-
-/* ==========================================================================
-   4. БІЗНЕС
-   ========================================================================== */
 
 export const business = {
   city: 'Дніпро',
   serviceArea: 'Дніпро та область',
-  /** Студія без вихідних — працюємо щодня */
   workHours: 'Щодня, 09:00–19:00',
 } as const;
 
-/* ==========================================================================
-   5. НАВІГАЦІЯ (якорі на секції сторінки)
-   ========================================================================== */
+/* ---------- Навігація (якорі розділів) ---------- */
 
 export interface NavItem {
   label: string;
@@ -136,10 +130,6 @@ export const navigation: NavItem[] = [
   { label: 'Питання', href: '#faq' },
   { label: 'Контакти', href: '#contacts' },
 ];
-
-/* ==========================================================================
-   6. ЗАГАЛЬНИЙ ОБ'ЄКТ — тільки база
-   ========================================================================== */
 
 export const site = {
   brand,

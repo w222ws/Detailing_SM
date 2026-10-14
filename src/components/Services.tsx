@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react';
 import { domAnimation, LazyMotion, m } from 'motion/react';
+import { ShieldCheckIcon } from '@phosphor-icons/react';
 import { priceDisclaimer, services, type Service } from '../config/services';
 
 /* ==========================================================================
-   Розділ #services. Перемикачі класу авто прибрані — вони нічого не
-   вирішували для користувача, тільки займали екран. Замість них — чистий
-   типографічний прайс-лист (як меню, не як плитка карток): назва, короткий
-   опис, ціна. Жодних рамок і пунктирних ліній між рядками — розділяє сам
-   ритм відступів. На фоні — ледь помітні контури зрізаних кузовних панелей
-   (та сама форма, що й clip-cut по всьому сайту), для текстури, не напоказ.
-   Один орекстрований вхід: заголовок і рядки проявляються по черзі.
+   #services — прайс-лист: назва, короткий опис, ціна.
+   • Ліворуч — мононумерація 01…08, задає ритм, читається як каталог.
+   • Рядок із featured (популярне) розгортається у «вітринну» картку:
+     фірмовий жовтий зліва, легка підсвітка, бейдж з іконкою щита, ціна
+     більша — одразу зрозуміло, що беруть найчастіше.
+   • Фон — контури шестикутників і зрізаних панелей під різними кутами,
+     жовті акценти в кутах. Без фільтрів і blur → без лагів.
+   • Один оркестрований вхід: заголовок і рядки проявляються по черзі.
    ========================================================================== */
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -20,6 +22,11 @@ function formatPrice(service: Service) {
     ? `$${service.priceFrom}`
     : `${service.priceFrom.toLocaleString('uk-UA')} ₴`;
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const cx = (...parts: Array<string | false | undefined>) =>
+  parts.filter(Boolean).join(' ');
 
 /** Слово виїжджає з-під маски знизу — один раз при вході секції в екран */
 function Word({
@@ -46,6 +53,124 @@ function Word({
   );
 }
 
+/** Контур шестикутника — декоративний елемент для фону */
+function HexOutline({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 100 115.47"
+      preserveAspectRatio="none"
+      className={cx('pointer-events-none', className)}
+    >
+      <polygon
+        points="50,1 99,29.5 99,86 50,114.5 1,86 1,29.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+/** Один рядок прайсу. Для featured — повноцінна «вітринна» картка. */
+function ServiceRow({ service, index }: { service: Service; index: number }) {
+  const price = formatPrice(service);
+  const num = pad2(index + 1);
+
+  if (service.featured) {
+    return (
+      <m.li
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.65, delay: index * 0.05, ease: EASE }}
+        className="relative"
+      >
+        {/* Жовтий бар зліва + м'яке світло всередині картки */}
+        <div className="clip-cut-sm relative overflow-hidden border border-accent-yellow/35 bg-bg-elevated p-5 sm:p-7">
+          <span
+            aria-hidden
+            className="absolute inset-y-0 left-0 w-[3px] bg-accent-yellow"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-accent-yellow/8"
+          />
+
+          {/* Бейдж «ПОПУЛЯРНЕ» */}
+          <span className="inline-flex items-center gap-2 bg-accent-yellow px-2.5 py-1 font-mono text-[0.65rem] font-bold tracking-widest text-bg-main uppercase">
+            <ShieldCheckIcon aria-hidden weight="fill" className="size-3.5" />
+            Найпопулярніше
+          </span>
+
+          <div className="mt-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-3">
+                <span className="font-mono text-xs font-bold text-accent-yellow sm:text-sm">
+                  {num}
+                </span>
+                <h3 className="font-display text-2xl text-text-main uppercase sm:text-3xl lg:text-4xl">
+                  {service.title}
+                </h3>
+              </div>
+              <p className="mt-2 max-w-xl text-sm text-text-muted sm:text-base">
+                {service.summary}
+              </p>
+            </div>
+            <p className="shrink-0 whitespace-nowrap">
+              {price ? (
+                <>
+                  <span className="mr-1 text-sm text-text-dim">від</span>
+                  <span className="font-display text-3xl font-bold text-accent-yellow sm:text-4xl">
+                    {price}
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm text-text-muted">Індивідуально</span>
+              )}
+            </p>
+          </div>
+        </div>
+      </m.li>
+    );
+  }
+
+  return (
+    <m.li
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.6, delay: index * 0.05, ease: EASE }}
+      className="group/row"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 className="flex items-baseline gap-3 font-display text-xl text-text-main uppercase sm:text-2xl lg:text-3xl">
+          <span className="font-mono text-xs font-bold text-text-dim transition-colors group-hover/row:text-accent-yellow sm:text-sm">
+            {num}
+          </span>
+          {service.title}
+        </h3>
+        <p className="shrink-0 whitespace-nowrap">
+          {price ? (
+            <>
+              <span className="mr-1 text-sm text-text-dim">від</span>
+              <span className="font-display text-xl font-bold text-accent-yellow sm:text-2xl">
+                {price}
+              </span>
+            </>
+          ) : (
+            <span className="text-sm text-text-muted">Індивідуально</span>
+          )}
+        </p>
+      </div>
+      <p className="mt-1.5 max-w-md pl-7 text-sm text-text-muted sm:pl-9 sm:text-base">
+        {service.summary}
+      </p>
+    </m.li>
+  );
+}
+
 function Services() {
   return (
     <LazyMotion features={domAnimation} strict>
@@ -53,7 +178,7 @@ function Services() {
         id="services"
         className="relative overflow-hidden bg-bg-main py-16 sm:py-20 lg:py-28"
       >
-        {/* Фон: ледь видимі контури зрізаних панелей кузова — та сама форма clip-cut */}
+        {/* Фон: контури зрізаних панелей + шестикутники під кутами */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
@@ -61,10 +186,32 @@ function Services() {
           <div className="clip-cut absolute -top-10 -left-20 size-72 rotate-[-9deg] border border-border-subtle/50 sm:size-[26rem]" />
           <div className="clip-cut-sm absolute right-[-4rem] bottom-[-3rem] size-56 rotate-[14deg] border border-accent-yellow/10 sm:size-80" />
           <div className="clip-cut absolute top-1/3 right-[12%] hidden size-48 rotate-[22deg] border border-border-subtle/30 lg:block" />
+
+          <HexOutline className="absolute top-20 right-[6%] size-28 rotate-[12deg] text-accent-yellow/15 sm:size-40" />
+          <HexOutline className="absolute top-[55%] left-[4%] hidden size-32 -rotate-[8deg] text-border-subtle/40 lg:block" />
+          <HexOutline className="absolute bottom-20 left-[38%] hidden size-24 rotate-[18deg] text-accent-yellow/10 lg:block" />
+          <HexOutline className="absolute top-[30%] right-[42%] hidden size-20 -rotate-[14deg] text-border-subtle/50 lg:block" />
+
+          {/* Жовта «пил-смуга» зліва вгорі */}
+          <div className="absolute top-24 left-0 h-px w-24 bg-linear-to-r from-accent-yellow/50 to-transparent sm:w-40" />
+          <div className="absolute right-0 bottom-32 h-px w-24 bg-linear-to-l from-accent-yellow/40 to-transparent sm:w-40" />
         </div>
 
         <div className="container-site relative">
-          <h2 className="max-w-xl font-display text-[2.6rem] leading-[1.02] uppercase sm:text-5xl lg:text-6xl">
+          <div className="flex items-baseline gap-4">
+            <span
+              aria-hidden
+              className="hidden font-mono text-xs font-bold tracking-[0.3em] text-accent-yellow uppercase sm:inline"
+            >
+              01 / {pad2(services.length)}
+            </span>
+            <span
+              aria-hidden
+              className="hidden h-px flex-1 bg-linear-to-r from-accent-yellow/40 to-transparent sm:block"
+            />
+          </div>
+
+          <h2 className="mt-4 max-w-xl font-display text-[2.6rem] leading-[1.02] uppercase sm:text-5xl lg:text-6xl">
             <Word index={0} className="text-text-main">
               Послуги
             </Word>{' '}
@@ -82,61 +229,14 @@ function Services() {
             transition={{ duration: 0.6, delay: 0.3, ease: EASE }}
             className="mt-4 max-w-md text-sm text-text-muted sm:text-base"
           >
-            Вісім напрямків робіт — від швидкої мийки до керамічного захисту на
-            роки.
+            Вісім напрямків робіт — від швидкої мийки до плівкового захисту
+            кузова на роки.
           </m.p>
 
           <ul className="mt-12 flex flex-col gap-9 sm:mt-16 sm:gap-10">
-            {services.map((service, index) => {
-              const price = formatPrice(service);
-              return (
-                <m.li
-                  key={service.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-80px' }}
-                  transition={{
-                    duration: 0.6,
-                    delay: index * 0.05,
-                    ease: EASE,
-                  }}
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                    <h3 className="font-display text-xl text-text-main uppercase sm:text-2xl lg:text-3xl">
-                      {service.title}
-                      {service.featured && (
-                        <span className="ml-3 inline-flex items-center gap-1.5 align-middle font-mono text-[0.65rem] font-normal tracking-wider text-accent-yellow uppercase">
-                          <span
-                            aria-hidden
-                            className="inline-block size-1.5 rotate-45 bg-accent-yellow"
-                          />
-                          популярне
-                        </span>
-                      )}
-                    </h3>
-                    <p className="shrink-0 whitespace-nowrap">
-                      {price ? (
-                        <>
-                          <span className="mr-1 text-sm text-text-dim">
-                            від
-                          </span>
-                          <span className="font-display text-xl font-bold text-accent-yellow sm:text-2xl">
-                            {price}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-sm text-text-muted">
-                          Індивідуально
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <p className="mt-1.5 max-w-md text-sm text-text-muted sm:text-base">
-                    {service.summary}
-                  </p>
-                </m.li>
-              );
-            })}
+            {services.map((service, index) => (
+              <ServiceRow key={service.id} service={service} index={index} />
+            ))}
           </ul>
 
           <p className="mt-10 max-w-xl text-sm text-text-dim sm:mt-12">
