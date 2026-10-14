@@ -16,6 +16,15 @@ import {
 } from '@phosphor-icons/react';
 import { compare, gallery } from '../config/works';
 
+/* ==========================================================================
+   #works — «Наші роботи». Два блоки: повзунок ДО/ПІСЛЯ + галерея-соти.
+   • Повзунок — transform-only, без лагів (див. Compare).
+   • Галерея — фото в шестикутниках, що вкладаються як справжні соти,
+     з порожніми контурами навколо (див. Honeycomb). Клік — лайтбокс на
+     весь екран: свайп на телефоні, ←/→/Esc на десктопі, лічильник 03/08.
+   Фото беруться з config/works.ts (файли лежать у public/works/).
+   ========================================================================== */
+
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const cx = (...parts: Array<string | false | undefined>) =>
@@ -39,6 +48,17 @@ const titleWord: Variants = {
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
+/* -------------------- COMPARE: «ДО / ПІСЛЯ» --------------------
+   Швидкий повзунок: жодного React-стану, жодного clip-path / left / width.
+   Позиція (--pos) пишеться в DOM раз на кадр (rAF), а рухаються лише два
+   шари через transform — це робить відеокарта, фото не перемальовується.
+   • шар «ДО» — контейнер overflow-hidden, зсунутий на (pos − 100%),
+     а фото всередині зсунуте в протилежний бік → фото стоїть на місці,
+     відкривається лише «вікно»;
+   • лінія з шильдиком — зсув на pos.
+   Керування: палець/миша по всій картці (клік — стрибок лінії), Pointer
+   Events + pointer capture; вертикальний свайп лишається скролом сторінки.
+   З клавіатури: ← → (±5), Home / End. */
 function Compare({ before, after }: { before: string; after: string }) {
   const box = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLSpanElement>(null);
@@ -88,15 +108,12 @@ function Compare({ before, after }: { before: string; after: string }) {
     e.preventDefault();
   };
 
-  const layer: CSSProperties = { willChange: 'transform' };
-
   return (
     <div
       ref={box}
       onPointerDown={onDown}
       onPointerMove={onMove}
-      style={{ '--pos': '50%' } as CSSProperties}
-      className="clip-cut relative aspect-[4/3] cursor-ew-resize overflow-hidden bg-carbon shadow-card select-none [touch-action:pan-y] sm:aspect-[16/10] lg:aspect-[21/10]"
+      className="clip-cut relative [--pos:50%] aspect-[4/3] cursor-ew-resize overflow-hidden bg-carbon shadow-card select-none [touch-action:pan-y] sm:aspect-[16/10] lg:aspect-[21/10]"
     >
       <img
         src={after}
@@ -109,30 +126,19 @@ function Compare({ before, after }: { before: string; after: string }) {
       {/* Шар «ДО»: вікно їде вправо-вліво, фото всередині їде навпаки */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        style={{
-          ...layer,
-          transform: 'translate3d(calc(var(--pos) - 100%), 0, 0)',
-        }}
+        className="cmp-window pointer-events-none absolute inset-0 overflow-hidden"
       >
         <img
           src={before}
           alt=""
           draggable={false}
           decoding="async"
-          className="absolute inset-0 size-full object-cover"
-          style={{
-            ...layer,
-            transform: 'translate3d(calc(100% - var(--pos)), 0, 0)',
-          }}
+          className="cmp-window-img absolute inset-0 size-full object-cover"
         />
       </div>
 
       {/* Лінія + шильдик */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ ...layer, transform: 'translate3d(var(--pos), 0, 0)' }}
-      >
+      <div className="cmp-line pointer-events-none absolute inset-0">
         <div className="absolute inset-y-0 left-0 w-px -translate-x-1/2 bg-accent-yellow">
           <span
             ref={thumb}
@@ -168,13 +174,12 @@ function Compare({ before, after }: { before: string; after: string }) {
 
 /* -------------------- HONEYCOMB: фото в шестикутниках --------------------
    Галерея — справжні соти: ряди чергуються (n, n−1 плиток) і вкладаються
-   одна в одну. Порожні комірки навколо фото — ледь помітні контури, ніби
-   сітка продовжується за межі екрана. Розміри рахуються з ширини блоку
-   (container query), тож нічого не «стрибає». Фото беруться з works.ts —
-   скільки не додай, соти самі добудуються рядами.
-   Лише clip-path + transform + колір: без фільтрів і blur → скролиться легко. */
-const HEX = 'polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)';
-const HEX_RATIO = 0.866; /* ширина / висота правильного шестикутника */
+   одна в одну. Фото в жовтих рамках на тлі наших сот (bg-honeycomb);
+   відсутня комірка в хвості останнього ряду — тільки контур.
+   Уся геометрія — у index.css (clip-hex, hex-comb, hex-row, hex-cell):
+   розмір плитки рахується з ширини блоку через container query, React
+   лише каже, скільки плиток у ряду (--n). Фото беруться з works.ts.
+   Лише clip-path + transform + колір: без фільтрів і blur → без лагів. */
 
 /* Скільки плиток у «довгому» ряду: телефон 2, планшет 3, десктоп 5 */
 function useCols() {
@@ -197,24 +202,27 @@ function useCols() {
   return n;
 }
 
-const cellStyle: CSSProperties = {
-  width: 'var(--w)',
-  aspectRatio: String(HEX_RATIO),
-  clipPath: HEX,
-};
-
-/* Порожня комірка — тільки тонкий контур */
-function Ghost({ faint }: { faint?: boolean }) {
+/* Порожня комірка в хвості останнього ряду — тільки контур (фон-соти
+   просвічують), щоб ряд виглядав добудованим */
+function Ghost({ dot }: { dot?: boolean }) {
   return (
-    <div
-      aria-hidden
-      style={cellStyle}
-      className={cx(
-        'relative shrink-0 bg-border-subtle/70',
-        faint && 'opacity-50',
+    <div aria-hidden className="hex-cell">
+      <svg
+        viewBox="0 0 100 115.47"
+        preserveAspectRatio="none"
+        className="absolute inset-0 size-full text-border-strong"
+      >
+        <polygon
+          points="50,1 99,29.5 99,86 50,114.5 1,86 1,29.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      {dot && (
+        <span className="clip-hex absolute top-1/2 left-1/2 aspect-[0.866] w-[18%] -translate-x-1/2 -translate-y-1/2 bg-accent-yellow/70" />
       )}
-    >
-      <div className="absolute inset-px bg-bg-main" style={{ clipPath: HEX }} />
     </div>
   );
 }
@@ -228,99 +236,66 @@ function Honeycomb({
 }) {
   const n = useCols();
 
-  /* Розкладаємо фото по рядах: n, n−1, n, n−1 … Хвіст добиваємо порожніми */
-  const rows: Array<Array<number | null>> = [];
+  /* Ряди: n, n−1, n, n−1 … Хвіст останнього ряду добиваємо контурами */
+  const rows: Array<{ odd: boolean; cells: Array<number | null> }> = [];
   for (let idx = 0, r = 0; idx < photos.length; r++) {
-    const size = r % 2 === 0 ? n : n - 1;
-    const row: Array<number | null> = [];
-    for (let k = 0; k < size; k++) row.push(idx < photos.length ? idx++ : null);
-    rows.push(row);
+    const odd = r % 2 === 1;
+    const cells: Array<number | null> = [];
+    for (let k = 0; k < (odd ? n - 1 : n); k++)
+      cells.push(idx < photos.length ? idx++ : null);
+    rows.push({ odd, cells });
   }
 
-  const wrapStyle = { '--n': n, containerType: 'inline-size' } as CSSProperties;
-  /* Ширина плитки: (ширина блоку − проміжки) / n */
-  const rowVars = {
-    '--w': 'calc((100cqw - (var(--n) - 1) * var(--g)) / var(--n))',
-  } as CSSProperties;
-
   return (
-    <div style={wrapStyle} className="[--g:6px] sm:[--g:8px] lg:[--g:10px]">
-      {rows.map((row, r) => {
-        const odd = r % 2 === 1;
-        return (
-          <div
-            key={r}
-            style={{
-              ...rowVars,
-              /* ряд вилазить за блок на одну комірку з кожного боку */
-              marginLeft: odd
-                ? 'calc((var(--w) + var(--g)) / -2)'
-                : 'calc(var(--w) * -1 - var(--g))',
-              marginTop:
-                r === 0 ? 0 : 'calc(var(--w) * -0.2887 + var(--g) * 0.866)',
-            }}
-            className="flex w-max gap-(--g)"
-          >
-            <Ghost faint />
-            {row.map((photo, k) =>
-              photo === null ? (
-                <Ghost key={`g${k}`} />
-              ) : (
-                <m.div
-                  key={photos[photo]}
-                  style={cellStyle}
-                  className="relative shrink-0"
-                  initial={{ opacity: 0, scale: 0.86 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{
-                    duration: 0.6,
-                    delay: (k % 5) * 0.06,
-                    ease: EASE,
-                  }}
+    <div style={{ '--n': n } as CSSProperties} className="hex-comb">
+      {rows.map((row, r) => (
+        <div key={r} className={cx('hex-row', row.odd && 'hex-row-odd')}>
+          {row.cells.map((photo, k) =>
+            photo === null ? (
+              <Ghost key={`g${k}`} dot={(r + k) % 2 === 0} />
+            ) : (
+              <m.div
+                key={photos[photo]}
+                className="hex-cell"
+                initial={{ opacity: 0, scale: 0.86 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{
+                  duration: 0.6,
+                  delay: (k % 5) * 0.06,
+                  ease: EASE,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onOpen(photo)}
+                  aria-label={`Відкрити фото ${photo + 1}`}
+                  className="clip-hex group absolute inset-0 bg-accent-yellow/75 outline-none transition-colors duration-300 hover:bg-accent-yellow focus-visible:bg-accent-yellow"
                 >
-                  <button
-                    type="button"
-                    onClick={() => onOpen(photo)}
-                    aria-label={`Відкрити фото ${photo + 1}`}
-                    style={{ clipPath: HEX }}
-                    className="group absolute inset-0 bg-border-strong outline-none transition-colors duration-300 hover:bg-accent-yellow focus-visible:bg-accent-yellow"
-                  >
+                  <span className="clip-hex absolute inset-[3px] overflow-hidden bg-carbon">
+                    <img
+                      src={photos[photo]}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      draggable={false}
+                      className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                    />
                     <span
-                      className="absolute inset-[2px] overflow-hidden bg-carbon"
-                      style={{ clipPath: HEX }}
+                      aria-hidden
+                      className="absolute inset-0 grid place-items-center bg-bg-main/45 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
                     >
-                      <img
-                        src={photos[photo]}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        draggable={false}
-                        className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
-                      />
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 grid place-items-center bg-bg-main/45 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
-                      >
-                        <span
-                          className="grid size-10 place-items-center bg-accent-yellow text-bg-main"
-                          style={{ clipPath: HEX }}
-                        >
-                          <ArrowsOutSimpleIcon
-                            weight="bold"
-                            className="size-4"
-                          />
-                        </span>
+                      <span className="clip-hex grid size-10 place-items-center bg-accent-yellow text-bg-main">
+                        <ArrowsOutSimpleIcon weight="bold" className="size-4" />
                       </span>
                     </span>
-                  </button>
-                </m.div>
-              ),
-            )}
-            <Ghost faint />
-          </div>
-        );
-      })}
+                  </span>
+                </button>
+              </m.div>
+            ),
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -447,6 +422,20 @@ export function Works() {
         id="works"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
+        {/* Фон — наші соти (bg-honeycomb) з м'яким переходом у сусідні розділи */}
+        <div
+          aria-hidden
+          className="bg-honeycomb pointer-events-none absolute inset-0"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-bg-main via-bg-main/60 to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-bg-main via-bg-main/60 to-transparent"
+        />
+
         <div className="container-site relative">
           <m.h2
             variants={titleList}
