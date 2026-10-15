@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { domAnimation, LazyMotion, m } from 'motion/react';
 import {
   ClockIcon,
@@ -22,10 +22,14 @@ import { brand, business, messengers } from '../config/site';
    Підсвітка вікна — bg-headlight (жовта «фара» з кута, той самий прийом,
    що й по сайту). Висота відповіді — accordion-panel/accordion-open
    (grid-template-rows, чистий CSS, без JS-вимірів, без лагів).
+   Перед відповіддю — коротке «друкує…» (3 крапки на opacity-пульсації,
+   без box-shadow), потім текст — один setTimeout на відкриття, нічого
+   безперервного, тому без лагів.
    Дані — з config/faq.ts і config/site.ts, нічого не захардкоджено.
    ========================================================================== */
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+const TYPE_DELAY = 550;
 
 const cx = (...parts: Array<string | false | undefined>) =>
   parts.filter(Boolean).join(' ');
@@ -97,15 +101,33 @@ function HexAvatar({
   );
 }
 
+/* «Друкує…» — 3 крапки на opacity-пульсації (Tailwind animate-pulse,
+   без box-shadow), зі зсувом фази — дешево й без лагів */
+function TypingDots() {
+  return (
+    <span className="clip-cut-sm inline-flex items-center gap-1.5 border border-border-subtle bg-bg-elevated px-4 py-3.5 sm:px-5">
+      {[0, 150, 300].map((delay) => (
+        <span
+          key={delay}
+          className="size-1.5 animate-pulse rounded-full bg-text-dim"
+          style={{ animationDelay: `${delay}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function FaqItem({
   question,
   answer,
   open,
+  revealed,
   onToggle,
 }: {
   question: string;
   answer: string;
   open: boolean;
+  revealed: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -130,14 +152,18 @@ function FaqItem({
         <HexAvatar className="size-11 sm:size-14" />
       </button>
 
-      {/* ВІДПОВІДЬ: студія, зліва, з'являється по кліку */}
+      {/* ВІДПОВІДЬ: студія, зліва — спершу «друкує…», потім текст */}
       <div className={cx('accordion-panel', open && 'accordion-open')}>
         <div>
           <div className="flex items-end gap-2.5 pb-1 sm:gap-3">
             <HexAvatar studio className="size-11 sm:size-14" />
-            <p className="clip-cut-sm max-w-[80%] border border-border-subtle bg-bg-elevated px-4 py-3 text-sm leading-relaxed text-text-muted sm:px-5 sm:py-3.5 sm:text-base">
-              {answer}
-            </p>
+            {revealed ? (
+              <p className="clip-cut-sm max-w-[80%] border border-border-subtle bg-bg-elevated px-4 py-3 text-sm leading-relaxed text-text-muted sm:px-5 sm:py-3.5 sm:text-base">
+                {answer}
+              </p>
+            ) : (
+              <TypingDots />
+            )}
           </div>
         </div>
       </div>
@@ -147,6 +173,13 @@ function FaqItem({
 
 export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [revealedIndex, setRevealedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (openIndex === null) return;
+    const t = setTimeout(() => setRevealedIndex(openIndex), TYPE_DELAY);
+    return () => clearTimeout(t);
+  }, [openIndex]);
 
   if (!faq.length) return null;
 
@@ -260,6 +293,7 @@ export function FAQ() {
                       question={item.q}
                       answer={item.a}
                       open={openIndex === index}
+                      revealed={revealedIndex === index}
                       onToggle={() =>
                         setOpenIndex((current) =>
                           current === index ? null : index,

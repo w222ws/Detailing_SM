@@ -4,15 +4,13 @@ import Marquee from './components/Marquee';
 import Services from './components/Services';
 import Works from './components/Works';
 import Process from './components/Process';
+import Partners from './components/Partners';
 import Reviews from './components/Reviews';
 import FAQ from './components/FAQ';
 import Contact from './components/Contact';
 import ReviewPage from './components/ReviewPage';
 import { REVIEW_PATH } from './config/review';
 
-/* /review — окрема сторінка, на яку веде QR-код. Без роутера: для двох
-   сторінок достатньо перевірки шляху. У vercel.json стоїть rewrite, тому
-   прямий захід на /review віддає цей же застосунок. */
 const isReviewPage =
   window.location.pathname.replace(/\/+$/, '') === REVIEW_PATH;
 
@@ -29,6 +27,7 @@ export default function App() {
         <Services />
         <Works />
         <Process />
+        <Partners />
         <Reviews />
         <FAQ />
         <Contact />
