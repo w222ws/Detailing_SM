@@ -1,399 +1,216 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { domAnimation, LazyMotion, m, MotionConfig } from 'motion/react';
-import {
-  InstagramLogoIcon,
-  PhoneCallIcon,
-  TelegramLogoIcon,
-  WhatsappLogoIcon,
-} from '@phosphor-icons/react';
+import { ArrowLeftIcon, ArrowUpRightIcon } from '@phosphor-icons/react';
 import logoImg from '../assets/logo.avif';
-import { brand, contacts } from '../config/site';
+import { brand, business } from '../config/site';
 import { locations } from '../config/locations';
 import { reviewPage } from '../config/review';
 
 /* ==========================================================================
-   /review — посадка з QR-коду. ПРОЄКТУЄТЬСЯ ПІД ТЕЛЕФОН: код сканують
-   тільки з нього, десктоп — побічний випадок.
+   /review — посадка з QR-коду. ПІД ТЕЛЕФОН: код сканують тільки з нього.
 
-   ВХІД. Екран спершу темний. Зліва вбігають ДВА ЖОВТИХ ВОГНИКИ —
-   це очі кота, бо в темряві від тварини видно тільки їх. Вони летять
-   через екран, підстрибуючи, примружені на бігу; зупиняються по
-   центру, розплющуються — і аж тоді з темряви навколо них проступає
-   тіло.
+   СТРУКТУРА: шапка → Карбон → його репліка (вона ж заголовок) → мітка
+   «Залиш відгук» → дві кнопки боксів. Усе.
 
-   Пробіжка і «очі в темряві» — не два різні сценарії, між якими треба
-   обирати: це одне й те саме. Тому біжать саме очі, а не силует.
+   Окремого заголовка й ліда немає навмисно. Раніше тут стояли три
+   текстові блоки підряд — eyebrow, заголовок, лід, — і за ними
+   губилось те єдине, чого від людини хочуть. Тепер говорить кіт, а
+   прямо просить мітка над кнопками.
 
-   ТАЙМЛАЙН:
-     0.30  вогники з'являються за лівим краєм екрана
-     0.30  біг: x через увесь екран, підстрибування, примружені очі
-     1.05  зупинка з OVERSHOOT — проскакують центр і вертаються.
-           Жива істота не гальмує як ліфт.
-     1.26  очі розплющуються на повну
-     1.20  тіло проступає з темряви навколо них
-     1.40  хвіст ДОГОНЯЄ і доводиться пружинкою — при різкій зупинці
-           він завжди відстає
-     1.60  фраза з'являється ПЕРЕКОШЕНОЮ — кіт її зачепив на бігу
-     1.70  КНОПКИ — раніше за кінець сцени: хто поспішає, не чекає
-     2.15  тягне лапу вниз до тексту
-     2.45  фраза вирівнюється — поправив
-     2.77  морг
+   ЖИВИЙ МАСКОТ. Карбон моргає сам, із випадковою паузою 4–8 с, і
+   щоразу МІНЯЄ ВИРАЗ РОТА — рот перемикається поки очі заплющені,
+   тож підміна непомітна, а кіт здається думаючим. Так само реагує
+   на тап. Це не нескінченна CSS-анімація, а рідкі одноразові
+   запуски через Web Animations API: одна фігура, раз на кілька
+   секунд, нічого не коштує.
 
-   ОБ'ЄМ. Не один градієнт на весь силует, а прийоми предметного рендеру:
-   • radial-градієнти окремо на голові, тілі, вухах — сфера, не пляма;
-   • bounce light — на самому контурі тон знову світлішає, бо край ловить
-     відбите світло. Без цього сфера читається плоским кругом;
-   • ambient occlusion — затемнення в місці, де голова сідає на тіло;
-   • очі як сфери: райдужка з градієнтом, тінь від повіки, відблик.
+   Жетон на ошийнику — «SM». Повне ім'я (Карбон СМ-ович) у підписі
+   під реплікою: на жетоні шириною ~16 px на екрані більше за дві
+   літери просто не прочитається.
 
-   ІНТЕРАКТИВ. Слідкування за мишею на телефоні мертве, тому його немає.
-   Замість нього — тап будь-де: кіт повертає голову туди, веде зіницями
-   і моргає. Нахил голови й зіниці пишуться напряму в style, морг іде
-   через Web Animations API на вкладеній групі, щоб не змагатися з
-   Framer Motion за той самий transform.
+   Лого в шапці йде з mix-blend-screen — у файлу своя чорна підкладка,
+   і без цього він висить на фоні помітною плашкою.
+
+   Рух лише там, де щось означає: кіт вистрибує знизу з перельотом,
+   хвіст вильне після приземлення, блиск спалахує останнім.
    ========================================================================== */
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-/* Межі ведення зіниці. Зіниця ry=13 в оці ry=18, тож по вертикалі
-   запас лише 5 — PUPIL_Y більший за це вилазить за край райдужки. */
-const PUPIL_X = 4;
+/* Зіниця rx=5 у вузькому прищуреному оці — більше за ці межі вилазить */
+const PUPIL_X = 3.5;
 const PUPIL_Y = 2.5;
-const HEAD_TILT = 5;
+
+/* Вирази рота. Перемикаються на кожному моргу — поки очі заплющені,
+   тому підміна непомітна. Усі починаються і закінчуються в тих самих
+   точках, інакше рот «стрибав» би по мордочці. */
+const MOUTHS = [
+  // спокійна усмішка — базова
+  'M134 155 C146 168 154 162 158 149 C162 162 170 168 182 155',
+  // широка, задоволена: дуги вдвічі глибші й ширші
+  'M126 151 C142 176 154 167 158 149 C162 167 174 176 190 151',
+  // стримана: коротка й майже пряма
+  'M142 158 C150 165 155 162 158 155 C161 162 166 165 174 158',
+  // хитра: правий кут помітно вище лівого
+  'M134 157 C146 170 154 163 158 149 C162 160 172 157 186 147',
+] as const;
 
 const clamp = (v: number) => Math.max(-1, Math.min(1, v));
 
-type Refs = {
-  head: React.RefObject<SVGGElement | null>;
-  blink: React.RefObject<SVGGElement | null>;
+const reveal = (delay: number) => ({
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, delay, ease: EASE },
+});
+
+/** «м. Дніпро, вул. Петра Бикова, 16» → місто дрібним, вулиця великим.
+    Природна ієрархія самої адреси — на відміну від вигаданої нумерації
+    «01 / 02», яка натякає на послідовність там, де її немає. */
+const splitAddress = (address: string) => {
+  const i = address.indexOf(',');
+  if (i === -1) return { city: null, street: address };
+  return {
+    city: address.slice(0, i).trim(),
+    street: address.slice(i + 1).trim(),
+  };
+};
+
+type CatRefs = {
+  eyes: React.RefObject<SVGGElement | null>;
   pupils: React.RefObject<SVGGElement | null>;
+  mouth: React.RefObject<SVGPathElement | null>;
 };
 
 /* --------------------------------------------------------------------------
    Карбон.
    -------------------------------------------------------------------------- */
-function Carbon({ head, blink, pupils }: Refs) {
+function Carbon({ eyes, pupils, mouth }: CatRefs) {
   return (
     <svg
       aria-hidden
-      viewBox="0 0 320 300"
+      viewBox="0 0 320 340"
       className="h-auto w-full"
-      preserveAspectRatio="xMidYMax meet"
-      /* overflow visible — очі вибігають далеко за межі viewBox зліва.
-         Обрізає вже <main> по краю екрана, що нам і треба. */
-      style={{ overflow: 'visible' }}
+      preserveAspectRatio="xMidYMid meet"
     >
-      <defs>
-        {/* Голова як сфера. Останній стоп СВІТЛІШИЙ за передостанній —
-            це bounce light: край ловить відбите світло й не буває
-            найтемнішою точкою. Без нього куля виглядає плоским кругом. */}
-        <radialGradient id="c-head" cx="0.36" cy="0.28" r="0.8">
-          <stop offset="0%" stopColor="#32343f" />
-          <stop offset="42%" stopColor="#1c1d26" />
-          <stop offset="76%" stopColor="#0c0d12" />
-          <stop offset="100%" stopColor="#16171f" />
-        </radialGradient>
-        <radialGradient id="c-body" cx="0.33" cy="0.14" r="0.95">
-          <stop offset="0%" stopColor="#282a35" />
-          <stop offset="40%" stopColor="#17181f" />
-          <stop offset="85%" stopColor="#0a0a0e" />
-          <stop offset="100%" stopColor="#111219" />
-        </radialGradient>
-        <linearGradient id="c-ear" x1="0.1" y1="0" x2="0.9" y2="1">
-          <stop offset="0%" stopColor="#2c2e3a" />
-          <stop offset="100%" stopColor="#0f1017" />
-        </linearGradient>
-        {/* Райдужка: світліша знизу-зліва, темніша по краю — куля, не диск */}
-        <radialGradient id="c-iris" cx="0.42" cy="0.66" r="0.72">
-          <stop offset="0%" stopColor="#fffd8e" />
-          <stop offset="50%" stopColor="#fff500" />
-          <stop offset="100%" stopColor="#bfa000" />
-        </radialGradient>
-        {/* Ambient occlusion — м'яке затемнення на стику форм */}
-        <radialGradient id="c-ao" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0%" stopColor="#000" stopOpacity="0.62" />
-          <stop offset="100%" stopColor="#000" stopOpacity="0" />
-        </radialGradient>
-        {/* Rim light: яскраво зліва, де лампа, згасає праворуч */}
-        <linearGradient
-          id="c-rim"
-          gradientUnits="userSpaceOnUse"
-          x1="95"
-          y1="45"
-          x2="212"
-          y2="178"
-        >
-          <stop offset="0%" stopColor="#fff500" stopOpacity="0.5" />
-          <stop offset="32%" stopColor="#fff500" stopOpacity="0.1" />
-          <stop offset="58%" stopColor="#fff500" stopOpacity="0" />
-        </linearGradient>
-        {/* Низ розчиняється — кіт виростає з темряви, не лежить наклейкою */}
-        <linearGradient id="c-fade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fff" stopOpacity="1" />
-          <stop offset="60%" stopColor="#fff" stopOpacity="1" />
-          <stop offset="82%" stopColor="#fff" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-        </linearGradient>
-        <mask id="c-mask">
-          <rect width="320" height="300" fill="url(#c-fade)" />
-        </mask>
-        <clipPath id="c-eye-l">
-          <ellipse cx="137" cy="107" rx="14" ry="18" />
-        </clipPath>
-        <clipPath id="c-eye-r">
-          <ellipse cx="183" cy="107" rx="14" ry="18" />
-        </clipPath>
-      </defs>
-
-      {/* ХВІСТ — окремо від тіла, бо ДОГОНЯЄ. При різкій зупинці хвіст
-          завжди відстає і доводиться по інерції; без цього тварина
-          виглядає як вимкнена іграшка. */}
+      {/* Хвіст — окремо від тіла, бо вильне після приземлення */}
       <m.g
-        mask="url(#c-mask)"
-        initial={{ opacity: 0, rotate: -16 }}
-        animate={{ opacity: 1, rotate: [-16, 7, -3, 0] }}
+        initial={{ rotate: 0 }}
+        animate={{ rotate: [0, -8, 5, -2, 0] }}
         transition={{
-          duration: 0.9,
-          delay: 1.4,
-          times: [0, 0.45, 0.75, 1],
+          duration: 1.1,
+          delay: 1,
+          times: [0, 0.3, 0.58, 0.82, 1],
           ease: 'easeOut',
         }}
-        style={{ transformOrigin: '228px 250px' }}
+        style={{ transformOrigin: '238px 292px' }}
       >
         <path
-          d="M 218 252 Q 274 244 269 196 Q 264 156 234 167"
-          fill="none"
-          stroke="url(#c-body)"
-          strokeWidth="22"
-          strokeLinecap="round"
+          d="M234.373 251.55C273.142 241.462 303.749 282.822 274.163 312.078C238.454 347.385 130.31 345.368 83.3791 327.209C70.1161 321.157 77.6965 298.963 93 299.972C147.072 319.139 221.11 321.157 251.717 299.972C268.041 288.875 258.859 273.743 244.576 276.77C223.151 283.831 214.989 258.611 234.373 251.55Z"
+          fill="#2c2f3a"
         />
       </m.g>
 
-      {/* ТІЛО — проступає з темряви навколо очей, які вже зупинились */}
-      <m.g
-        mask="url(#c-mask)"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1.2, ease: EASE }}
-      >
-        <path
-          fill="url(#c-body)"
-          stroke="url(#c-rim)"
-          strokeWidth="2"
-          d="M 160 140 Q 212 150 222 215 Q 230 284 160 290 Q 90 284 98 215 Q 108 150 160 140 Z"
-        />
-        {/* Права лапа */}
-        <ellipse cx="186" cy="277" rx="21" ry="13" fill="#191a22" />
-        {/* AO між лапою і тілом */}
-        <ellipse cx="186" cy="266" rx="26" ry="11" fill="url(#c-ao)" />
+      {/* Тіло */}
+      <path
+        d="M113 149C90 181 81 222 78 277C78 311 101 328 157 328C216 328 241 312 241 280C241 230 224 179 203 149H113Z"
+        fill="#1c1e26"
+      />
+      {/* Світла грудка */}
+      <path
+        d="M114 167H201C193 189 178 201 171 222L157 243L144 222C137 201 122 190 114 167Z"
+        fill="#2c2f3a"
+      />
 
-        {/* ЛІВА ЛАПА, поза «опущена» — гасне на час жесту.
-            Обертанням таку лапу не підняти: вектор плече→стопа дивиться
-            вниз, розвернути його треба на ~160°, а це вже не жест.
-            Тому перемикаємо позу, як у класичній 2D-анімації. */}
-        <m.g
-          initial={{ opacity: 1 }}
-          animate={{ opacity: [1, 1, 0, 0, 1] }}
-          transition={{
-            duration: 1.3,
-            delay: 2.1,
-            times: [0, 0.12, 0.2, 0.62, 0.72],
-            ease: 'linear',
-          }}
-        >
-          <ellipse cx="134" cy="277" rx="21" ry="13" fill="#191a22" />
-          <ellipse cx="134" cy="266" rx="26" ry="11" fill="url(#c-ao)" />
-        </m.g>
-      </m.g>
+      {/* Голова з вухами */}
+      <path
+        d="M51.6057 16L111.836 50.9479C131.912 42.9598 152.993 42.9598 171.062 47.9523L193.146 38.9657L190.135 50.9479L212.219 47.9523L262.411 16.9985L260.403 38.9657L250.365 44.9568L258.396 50.9479L255.384 88.8913C273.453 117.848 270.442 145.806 246.35 166.775L259.4 168.772L237.315 177.759C215.231 194.733 120.87 195.732 91.7591 178.757L66.6632 172.766L77.7054 164.778C54.6172 150.799 43.575 123.839 51.6057 96.8794V16Z"
+        fill="#1c1e26"
+      />
+      {/* Внутрішні вуха */}
+      <path d="M65 34L103 66L71 81L65 34Z" fill="#2c2f3a" />
+      <path d="M248 33L243 80L218 64L248 33Z" fill="#2c2f3a" />
+      {/* Світлі грані над очима — саме вони дають прищур */}
+      <path d="M75 78C103 78 126 87 144 96L82 91L75 78Z" fill="#2c2f3a" />
+      <path
+        d="M171 91C194 76.0659 219 71.799 240 74.9991L234 82.4662C213 79.266 193 83.5329 171 91Z"
+        fill="#2c2f3a"
+      />
 
-      {/* ЛІВА ЛАПА, поза «витягнута вперед-вниз» — тягнеться до тексту,
-          який на телефоні лежить ПІД котом. Тому жест іде вниз, а не
-          вгору: так він коротший і читабельніший. */}
-      <m.g
-        mask="url(#c-mask)"
-        initial={{ opacity: 0, rotate: -8 }}
-        animate={{ opacity: [0, 0, 1, 1, 0], rotate: [-8, -8, 0, 0, -5] }}
-        transition={{
-          duration: 1.3,
-          delay: 2.1,
-          times: [0, 0.14, 0.26, 0.6, 0.7],
-          ease: 'easeOut',
-        }}
-        style={{ transformOrigin: '126px 222px' }}
-      >
-        <path
-          d="M 126 222 Q 112 258 98 288"
-          fill="none"
-          stroke="url(#c-body)"
-          strokeWidth="21"
-          strokeLinecap="round"
-        />
-        {/* Подушечка — інакше лапа читається обрубком без кисті */}
-        <ellipse
-          cx="96"
-          cy="291"
-          rx="15"
-          ry="11"
-          fill="#22242e"
-          transform="rotate(18 96 291)"
-        />
-      </m.g>
-
-      {/* ГОЛОВА. g (ref) — нахил від тапу; усередині череп і очі мають
-          РОЗДІЛЬНІ анімації появи, бо очі мусять бути видимі ще в
-          темряві, коли черепа нема. Якби вони лежали під одним opacity,
-          увесь вхідний хук зник би. */}
+      {/* ОЧІ. Зовнішня група — морг (scaleY), внутрішня — ведення зіниць */}
       <g
-        ref={head}
-        style={{
-          transformOrigin: '160px 152px',
-          transition: 'transform 0.35s cubic-bezier(0.22,1,0.36,1)',
-        }}
+        ref={eyes}
+        style={{ transformOrigin: 'center', transformBox: 'fill-box' }}
       >
-        {/* Череп проступає. Тільки opacity, без scale: при масштабуванні
-            черепа очі з'їхали б відносно нього на кілька пікселів. */}
-        <m.g
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.2, ease: EASE }}
+        <path
+          d="M79 97C100 97 127 102.044 142 113.14C136 129.281 123 136.342 106 133.316C89 130.289 82 117.175 79 97Z"
+          fill="#fff500"
+        />
+        <path
+          d="M174 115.857C194 109.923 217 108.934 237 103C231 126.736 219 133.658 205 131.68C189 129.702 180 126.736 174 115.857Z"
+          fill="#fff500"
+        />
+        <g
+          ref={pupils}
+          style={{ transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)' }}
         >
-          {/* Вуха — перед головою, вона перекриває їхню основу */}
-          <path
-            fill="url(#c-ear)"
-            stroke="url(#c-rim)"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            d="M 114 96 L 104 28 L 153 76 Z"
-          />
-          <path
-            fill="url(#c-ear)"
-            stroke="url(#c-rim)"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            d="M 206 96 L 216 28 L 167 76 Z"
-          />
-          <ellipse
-            cx="160"
-            cy="112"
-            rx="53"
-            ry="47"
-            fill="url(#c-head)"
-            stroke="url(#c-rim)"
-            strokeWidth="2"
-          />
-          {/* AO під підборіддям — голова сідає на тіло, а не висить */}
-          <ellipse cx="160" cy="156" rx="46" ry="16" fill="url(#c-ao)" />
-          <path
-            d="M 151 141 L 169 141 L 160 150 Z"
-            fill="none"
-            stroke="#fff500"
-            strokeOpacity="0.5"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          />
-        </m.g>
-
-        {/* ОЧІ — видимі з 0.25с, ще в повній темряві. m.g — розплющення;
-            вкладена g (ref) — морг від тапу через Web Animations API,
-            окремий шар, щоб два джерела не змагалися за один transform. */}
-        {/* Рівень 1 — БІГ. x веде вогники через увесь екран, y дає
-              підстрибування (згасає до зупинки), фінальні ключі
-              -3 → 0 після 10 — це overshoot: проскочили центр і
-              вернулись. */}
-        <m.g
-          initial={{ opacity: 0, x: -250, y: 0 }}
-          animate={{
-            opacity: [0, 1, 1, 1, 1, 1, 1],
-            x: [-250, -170, -95, -35, 10, -3, 0],
-            y: [0, -17, -3, -14, -2, -5, 0],
-          }}
-          transition={{
-            duration: 1.0,
-            delay: 0.3,
-            times: [0, 0.14, 0.32, 0.52, 0.72, 0.87, 1],
-            ease: 'easeOut',
-          }}
-        >
-          {/* Рівень 2 — ПРИМРУЖЕННЯ й МОРГ. Окремо від бігу, бо Framer
-                не вміє дати одному елементу дві незалежні послідовності
-                на той самий transform. */}
-          <m.g
-            initial={{ scaleY: 0.5 }}
-            animate={{ scaleY: [0.5, 0.5, 1, 1, 0.06, 1] }}
-            transition={{
-              duration: 2.9,
-              delay: 0.3,
-              times: [0, 0.26, 0.33, 0.8, 0.85, 0.92],
-              ease: 'easeOut',
-            }}
-            style={{ transformOrigin: 'center', transformBox: 'fill-box' }}
-          >
-            {/* Рівень 3 — морг від тапу через WAAPI */}
-            <g
-              ref={blink}
-              style={{ transformOrigin: 'center', transformBox: 'fill-box' }}
-            >
-              <g clipPath="url(#c-eye-l)">
-                <ellipse
-                  cx="137"
-                  cy="107"
-                  rx="14"
-                  ry="18"
-                  fill="url(#c-iris)"
-                />
-                {/* Тінь від верхньої повіки */}
-                <ellipse
-                  cx="137"
-                  cy="88"
-                  rx="17"
-                  ry="11"
-                  fill="#000"
-                  opacity="0.32"
-                />
-              </g>
-              <g clipPath="url(#c-eye-r)">
-                <ellipse
-                  cx="183"
-                  cy="107"
-                  rx="14"
-                  ry="18"
-                  fill="url(#c-iris)"
-                />
-                <ellipse
-                  cx="183"
-                  cy="88"
-                  rx="17"
-                  ry="11"
-                  fill="#000"
-                  opacity="0.32"
-                />
-              </g>
-
-              {/* Зіниці — ведуться за тапом */}
-              <g
-                ref={pupils}
-                style={{
-                  transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
-                }}
-              >
-                <ellipse cx="137" cy="107" rx="3.2" ry="13" fill="#08080c" />
-                <ellipse cx="183" cy="107" rx="3.2" ry="13" fill="#08080c" />
-                {/* Відблики — ставлять очі «за скло» й оживлюють погляд */}
-                <circle cx="131" cy="99" r="3.4" fill="#fff" opacity="0.8" />
-                <circle cx="177" cy="99" r="3.4" fill="#fff" opacity="0.8" />
-              </g>
-            </g>
-          </m.g>
-        </m.g>
+          <ellipse cx="115" cy="116.5" rx="5" ry="14.5" fill="#07070a" />
+          <ellipse cx="201" cy="118.5" rx="5" ry="11.5" fill="#07070a" />
+          <circle cx="107.5" cy="107.5" r="2.5" fill="#ffffff" />
+          <circle cx="193.5" cy="112.5" r="2.5" fill="#ffffff" />
+        </g>
       </g>
+
+      {/* Ніс і рот. Рот міняється під час моргу — звідси ref */}
+      <path d="M149 137H166L157.5 147L149 137Z" fill="#07070a" />
+      <path
+        ref={mouth}
+        d={MOUTHS[0]}
+        stroke="#07070a"
+        strokeWidth="3"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Вуса */}
+      <path
+        d="M56 132L88 139M59 149L89 144"
+        stroke="#2c2f3a"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M228 139L261 132M228 144L258 149"
+        stroke="#2c2f3a"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+
+      {/* Ошийник і жетон «SM» */}
+      <path
+        d="M107 181C141 191.393 175 191.393 209 181L204 192.692C173.333 202.436 142.667 202.436 112 192.692L107 181Z"
+        fill="#07070a"
+      />
+      <circle cx="158" cy="206" r="15" fill="#fff500" />
+      <text
+        x="158"
+        y="211"
+        textAnchor="middle"
+        fill="#07070a"
+        fontSize="13"
+        fontWeight="800"
+        letterSpacing="0.5"
+        fontFamily="ui-sans-serif, system-ui, sans-serif"
+      >
+        SM
+      </text>
     </svg>
   );
 }
 
 export function ReviewPage() {
-  const head = useRef<SVGGElement>(null);
-  const blink = useRef<SVGGElement>(null);
+  const eyes = useRef<SVGGElement>(null);
   const pupils = useRef<SVGGElement>(null);
+  const mouth = useRef<SVGPathElement>(null);
+  const mouthIndex = useRef(0);
 
   const phrase = useMemo(
     () =>
@@ -414,9 +231,6 @@ export function ReviewPage() {
     };
   }, []);
 
-  // Тап будь-де: кіт повертає голову туди, веде зіницями і моргає.
-  // Саме тап, не рух миші — на телефоні миші немає, а pointerdown
-  // приходить і від пальця, і від кліку.
   useEffect(() => {
     if (
       typeof window === 'undefined' ||
@@ -424,36 +238,48 @@ export function ReviewPage() {
     ) {
       return;
     }
+
+    /* Морг + зміна виразу. Рот підміняється на середині моргу, коли
+       очі заплющені, — підміни не видно, а кіт ніби передумав. */
+    const blink = () => {
+      eyes.current?.animate(
+        [
+          { transform: 'scaleY(1)' },
+          { transform: 'scaleY(0.08)' },
+          { transform: 'scaleY(1)' },
+        ],
+        { duration: 240, easing: 'ease-in-out' },
+      );
+      window.setTimeout(() => {
+        mouthIndex.current = (mouthIndex.current + 1) % MOUTHS.length;
+        mouth.current?.setAttribute('d', MOUTHS[mouthIndex.current]);
+      }, 110);
+    };
+
+    /* Сам по собі — з випадковою паузою, щоб не читався як метроном.
+       Один таймер і одна фігура: дешевше за будь-який нескінченний
+       CSS-цикл, який крутився б і тоді, коли на нього не дивляться. */
+    let timer = window.setTimeout(function tick() {
+      blink();
+      timer = window.setTimeout(tick, 4000 + Math.random() * 4000);
+    }, 3200);
+
+    // Тап будь-де: зіниці ведуться туди + той самий морг із виразом
     const onTap = (e: PointerEvent) => {
       const nx = clamp((e.clientX / window.innerWidth - 0.5) * 2.4);
       const ny = clamp((e.clientY / window.innerHeight - 0.5) * 2.4);
       if (pupils.current) {
         pupils.current.style.transform = `translate(${nx * PUPIL_X}px, ${ny * PUPIL_Y}px)`;
       }
-      if (head.current) {
-        head.current.style.transform = `rotate(${nx * HEAD_TILT}deg)`;
-      }
-      // Морг через WAAPI: Framer тримає scaleY на батьківській групі,
-      // тому власну анімацію вішаємо на вкладену — вони не б'ються.
-      blink.current?.animate(
-        [
-          { transform: 'scaleY(1)' },
-          { transform: 'scaleY(0.06)' },
-          { transform: 'scaleY(1)' },
-        ],
-        { duration: 240, easing: 'ease-in-out' },
-      );
+      blink();
     };
     window.addEventListener('pointerdown', onTap, { passive: true });
-    return () => window.removeEventListener('pointerdown', onTap);
-  }, []);
 
-  const topChannels = [
-    { c: contacts.telegram, Icon: TelegramLogoIcon },
-    { c: contacts.instagram, Icon: InstagramLogoIcon },
-    { c: contacts.whatsapp, Icon: WhatsappLogoIcon },
-    { c: contacts.phone, Icon: PhoneCallIcon },
-  ];
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointerdown', onTap);
+    };
+  }, []);
 
   return (
     <LazyMotion features={domAnimation} strict>
@@ -465,149 +291,192 @@ export function ReviewPage() {
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-bg-main via-bg-main/60 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-linear-to-b from-bg-main via-bg-main/70 to-transparent"
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-bg-main via-bg-main/70 to-transparent"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-bg-main via-bg-main/70 to-transparent"
           />
-          {/* Лампа боксу — те саме джерело, що ліпить об'єм коту */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 h-[55vh]"
             style={{
               background:
-                'radial-gradient(ellipse 55% 75% at 34% 2%, rgb(255 245 0 / 0.07), transparent 70%)',
+                'radial-gradient(ellipse 55% 75% at 40% 0%, rgb(255 245 0 / 0.07), transparent 70%)',
             }}
           />
 
-          <m.header
-            initial={{ opacity: 0, y: -14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: EASE }}
-            className="relative z-10 px-3 pt-3 sm:px-6 sm:pt-4"
-          >
-            <div className="clip-cut relative mx-auto flex max-w-xl items-center justify-between gap-3 border border-border-subtle bg-bg-elevated px-3 py-2 shadow-card sm:px-4 sm:py-3">
+          <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col px-6 pt-6 pb-10">
+            {/* ===== ШАПКА =====
+                Та сама панель, що в Header на головній: clip-cut, той
+                самий бордер, bg-bg-card і shadow-card. Сторінка коротка,
+                тож не fixed — просто стоїть зверху. */}
+            <m.header
+              {...reveal(0)}
+              className="relative flex h-[4.5rem] items-center justify-between gap-3 pr-4 pl-3"
+            >
+              <div
+                aria-hidden
+                className="clip-cut absolute inset-0 -z-10 border border-border-subtle bg-bg-card/95 shadow-card"
+              />
+              {/* Лого — круглий бейдж, тому квадратне й велике. У вузькій
+                  смужці h-9 w-auto воно просто губилось. Файл уже
+                  прозорий, жодних блендів не треба. */}
               <a
                 href="/"
                 aria-label={`${brand.name}: на головну`}
-                className="block size-12 shrink-0 sm:size-16"
+                className="relative block size-14 shrink-0"
               >
                 <img
                   src={logoImg}
                   alt={brand.name}
-                  width={64}
-                  height={64}
+                  width={56}
+                  height={56}
                   decoding="async"
                   fetchPriority="high"
-                  className="h-full w-full object-contain"
+                  className="h-full w-full bg-transparent object-contain"
                 />
               </a>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {topChannels.map(({ c, Icon }) => (
-                  <a
-                    key={c.id}
-                    href={c.href}
-                    target={c.id === 'phone' ? undefined : '_blank'}
-                    rel="noopener noreferrer"
-                    aria-label={c.label}
-                    className="clip-cut-sm grid size-9 place-items-center border border-border-subtle text-text-main transition-colors hover:border-accent-yellow hover:text-accent-yellow sm:size-10"
-                  >
-                    <Icon
-                      aria-hidden
-                      weight="fill"
-                      className="size-4 sm:size-5"
-                    />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </m.header>
+              <a
+                href="/"
+                className="group relative inline-flex shrink-0 items-center gap-2 font-mono text-[0.6rem] font-bold tracking-widest text-text-dim uppercase transition-colors hover:text-accent-yellow"
+              >
+                <ArrowLeftIcon
+                  aria-hidden
+                  weight="bold"
+                  className="size-3.5 transition-transform group-hover:-translate-x-0.5"
+                />
+                {reviewPage.backLabel}
+              </a>
+            </m.header>
 
-          {/* === СЦЕНА ===
-              Кіт ЗВЕРХУ: на телефоні погляд іде зверху вниз, і першим
-              має вдарити він, а не текст. */}
-          <section className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-5 pt-2 pb-6">
-            <div className="w-[82%] max-w-[19rem] sm:w-[58%]">
-              <Carbon head={head} blink={blink} pupils={pupils} />
-            </div>
-
-            {/* Фраза з'являється вже ПЕРЕКОШЕНОЮ — кіт її зачепив, поки
-                ти не дивився. Він же й поправляє. */}
-            <m.p
-              initial={{ opacity: 0, y: 10, rotate: -3 }}
-              animate={{
-                opacity: [0, 1, 1, 1],
-                y: [10, 6, 6, 0],
-                rotate: [-3, -3, -3, 0],
-              }}
-              transition={{
-                duration: 1.3,
-                delay: 1.6,
-                times: [0, 0.22, 0.62, 0.76],
-                ease: 'easeOut',
-              }}
-              className="mt-3 max-w-[20rem] text-center font-display text-2xl leading-[1.08] text-text-main sm:max-w-md sm:text-3xl"
-            >
-              — {phrase}
-            </m.p>
-
-            <m.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 2.75 }}
-              className="mt-2.5 font-mono text-[0.58rem] font-bold tracking-widest text-text-dim uppercase sm:text-[0.65rem]"
-            >
-              {reviewPage.catTag}
-            </m.p>
-
-            {/* Кнопки — на 1.3с, раніше за кінець сцени */}
-            <m.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 1.7, ease: EASE }}
-              className="mt-6 flex w-full flex-col gap-2.5 sm:mt-8 sm:gap-3"
-            >
-              {locations.map((loc, i) => (
-                <m.a
-                  key={loc.id}
-                  href={loc.reviewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+            {/* Контент центрується у вільному просторі — інакше на
+                високих екранах під кнопками лишається діра */}
+            <div className="flex flex-1 flex-col justify-center py-6">
+              {/* ===== КАРБОН ===== */}
+              <div className="relative mx-auto w-[64%] max-w-[15rem]">
+                {/* Блиск — спалахує останнім, уже після приземлення.
+                    Чотири промені: символ чистої поверхні, тобто рівно
+                    те, що студія робить з авто. */}
+                <m.svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  initial={{ opacity: 0, scale: 0.2, rotate: -40 }}
+                  animate={{ opacity: 1, scale: [0.2, 1.2, 1], rotate: 0 }}
                   transition={{
-                    duration: 0.45,
-                    delay: 1.8 + i * 0.08,
+                    duration: 0.6,
+                    delay: 1.2,
+                    times: [0, 0.6, 1],
                     ease: EASE,
                   }}
-                  whileTap={{ scale: 0.985 }}
-                  className="clip-cut group relative block overflow-hidden border border-border-subtle bg-bg-elevated py-3.5 pr-4 pl-6 shadow-card transition-colors hover:border-accent-yellow sm:py-5 sm:pl-7"
+                  className="absolute -top-2 -right-2 z-10 size-8 text-accent-yellow"
                 >
-                  <span
-                    aria-hidden
-                    className="absolute inset-y-0 left-0 w-[3px] bg-accent-yellow transition-all duration-300 group-hover:w-[6px]"
+                  <path
+                    d="M12 0 L13.7 10.3 L24 12 L13.7 13.7 L12 24 L10.3 13.7 L0 12 L10.3 10.3 Z"
+                    fill="currentColor"
                   />
-                  <span className="block font-mono text-[0.58rem] font-bold tracking-widest text-accent-yellow uppercase sm:text-[0.6rem]">
-                    Залишити відгук
-                  </span>
-                  <span className="mt-1 block text-sm text-text-main sm:text-base">
-                    {loc.address}
-                  </span>
-                </m.a>
-              ))}
-            </m.div>
+                </m.svg>
 
-            <m.a
-              href="/"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 2.95 }}
-              className="mt-6 font-mono text-[0.58rem] font-bold tracking-widest text-text-dim uppercase underline-offset-4 transition-colors hover:text-accent-yellow hover:underline"
-            >
-              {reviewPage.backLabel}
-            </m.a>
-          </section>
+                {/* Вистрибує знизу з перельотом — так застрибують на стіл */}
+                <m.div
+                  initial={{ opacity: 0, y: 56, scale: 0.9 }}
+                  animate={{
+                    opacity: 1,
+                    y: [56, -8, 0],
+                    scale: [0.9, 1.03, 1],
+                  }}
+                  transition={{
+                    duration: 0.7,
+                    delay: 0.35,
+                    times: [0, 0.62, 1],
+                    ease: [0.3, 0.9, 0.4, 1],
+                  }}
+                >
+                  <Carbon eyes={eyes} pupils={pupils} mouth={mouth} />
+                </m.div>
+              </div>
+
+              {/* ===== РЕПЛІКА — вона ж заголовок ===== */}
+              <h1 className="mt-6 text-center font-display text-[1.9rem] leading-[1] uppercase sm:text-4xl">
+                <m.span {...reveal(0.85)} className="block text-text-main">
+                  {phrase[0]}
+                </m.span>
+                <m.span {...reveal(0.93)} className="block text-accent-yellow">
+                  {phrase[1]}
+                </m.span>
+              </h1>
+
+              <m.p
+                {...reveal(1.02)}
+                className="mt-3 text-center font-mono text-[0.55rem] font-bold tracking-[0.18em] text-text-dim uppercase"
+              >
+                {reviewPage.catTag}
+              </m.p>
+
+              {/* ===== ДІЯ ===== */}
+              <m.p
+                {...reveal(1.12)}
+                className="mt-9 font-mono text-[0.62rem] font-bold tracking-[0.2em] text-accent-yellow uppercase"
+              >
+                {reviewPage.chooseLabel}
+              </m.p>
+
+              <div className="mt-3 flex flex-col gap-2.5">
+                {locations.map((loc, i) => {
+                  const { city, street } = splitAddress(loc.address);
+                  return (
+                    <m.a
+                      key={loc.id}
+                      href={loc.reviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.45,
+                        delay: 1.2 + i * 0.08,
+                        ease: EASE,
+                      }}
+                      whileTap={{ scale: 0.985 }}
+                      className="clip-cut group flex items-center justify-between gap-3 border border-border-subtle bg-bg-elevated py-3.5 pr-3 pl-5 shadow-card transition-colors hover:border-accent-yellow"
+                    >
+                      <span className="min-w-0">
+                        {city && (
+                          <span className="block font-mono text-[0.55rem] font-bold tracking-widest text-text-dim uppercase">
+                            {city}
+                          </span>
+                        )}
+                        <span className="mt-0.5 block text-[0.95rem] leading-snug text-text-main">
+                          {street}
+                        </span>
+                      </span>
+                      <span
+                        aria-hidden
+                        className="clip-cut-sm grid size-11 shrink-0 place-items-center bg-accent-yellow text-bg-main transition-transform duration-300 group-hover:rotate-45"
+                      >
+                        <ArrowUpRightIcon weight="bold" className="size-5" />
+                      </span>
+                    </m.a>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ===== МІНІ-ПІДВАЛ =====
+                Один рядок: копірайт і місто. Рік кінця береться з
+                системного годинника, початок — із brand.since, тож
+                нікому не треба згадувати про нього щосічня. */}
+            <m.footer {...reveal(1.45)}>
+              <div
+                aria-hidden
+                className="h-px bg-linear-to-r from-transparent via-border-subtle to-transparent"
+              />
+              <p className="mt-4 text-center font-mono text-[0.55rem] tracking-[0.15em] text-text-dim uppercase">
+                © {brand.since}—{new Date().getFullYear()} {brand.name} ·{' '}
+                {business.city}
+              </p>
+            </m.footer>
+          </div>
         </main>
       </MotionConfig>
     </LazyMotion>
