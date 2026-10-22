@@ -125,10 +125,8 @@ export interface NavItem {
 export const navigation: NavItem[] = [
   { label: 'Послуги', href: '#services' },
   { label: 'Роботи', href: '#works' },
-  { label: 'Процес', href: '#process' },
   { label: 'Відгуки', href: '#reviews' },
   { label: 'Питання', href: '#faq' },
-  { label: 'Контакти', href: '#contacts' },
 ];
 
 export const site = {

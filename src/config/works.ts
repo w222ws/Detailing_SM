@@ -19,6 +19,10 @@ export type ComparePair = {
   after: string;
 };
 
+/** Підзаголовок розділу — підказує, що повзунок тягнеться рукою */
+export const worksIntro =
+  'Один дотик повзунка показує, що було і що стало. Нижче — решта робіт з останніх виїздів.';
+
 /* { '../assets/works/01.avif': '/assets/01-abc123.avif', … } */
 const files = import.meta.glob<string>(
   '../assets/works/*.{avif,webp,jpg,jpeg,png}',

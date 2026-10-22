@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import {
   ArrowUpIcon,
-  CheckIcon,
   ClockIcon,
-  CopyIcon,
   InstagramLogoIcon,
   MapPinIcon,
+  PhoneCallIcon,
   TelegramLogoIcon,
   WhatsappLogoIcon,
   type IconProps,
@@ -22,9 +21,14 @@ import { contactSection, developer } from '../config/contact';
 import logoImg from '../assets/logo.avif';
 
 /* ==========================================================================
-   #contacts — він же футер сайту: велика кнопка дзвінка, лого + опис,
-   розділи, месенджери, студії та графік, права.
+   #contacts — він же футер: проста кнопка дзвінка, рядок розділів,
+   лого, месенджери, студії та графік, права.
    Статичний (без анімацій). Фон bg-bg-elevated збігається з фоном лого.
+
+   Розділи стоять ОДНИМ РЯДКОМ, а не колонкою: шість пунктів стовпчиком
+   розтягували футер і лишали півекрана порожнечі праворуч.
+   Месенджери — назвою, а не сирим номером: номер і так величезний
+   у кнопці зверху, а «+380973624845» у списку читалось як сміття.
    Усе з config: site.ts, locations.ts, contact.ts.
    ========================================================================== */
 
@@ -34,10 +38,16 @@ const ICONS: Record<string, React.ComponentType<IconProps>> = {
   WhatsappLogo: WhatsappLogoIcon,
 };
 
+const MESSENGER_NAME: Record<string, string> = {
+  telegram: 'Telegram',
+  instagram: 'Instagram',
+  whatsapp: 'WhatsApp',
+};
+
 const HEADING =
   'font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase sm:text-xs';
 const LINK =
-  'inline-flex min-h-10 items-center lg:min-h-11 gap-3 text-text-muted transition-colors duration-200 hover:text-accent-yellow';
+  'inline-flex min-h-11 items-center gap-3 text-text-muted transition-colors duration-200 hover:text-accent-yellow';
 
 const year = new Date().getFullYear();
 
@@ -121,52 +131,52 @@ export default function Contact() {
           href={phone.href}
           onClick={onPhoneClick}
           aria-label={`${phone.label} ${phone.display}`}
-          className="clip-cut group flex items-center justify-between gap-4 bg-accent-yellow px-5 py-5 text-bg-main transition-transform duration-300 hover:-translate-y-1 active:scale-[0.99] sm:px-8 sm:py-7"
+          className="clip-cut-sm flex flex-col gap-1 bg-accent-yellow px-5 py-4 text-bg-main transition-colors duration-200 hover:bg-accent-hot active:scale-[0.99] sm:hidden"
         >
-          <span className="min-w-0">
-            <span
-              aria-live="polite"
-              className="block font-mono text-[0.65rem] font-bold tracking-widest uppercase opacity-70 sm:text-xs"
-            >
-              {desktop
-                ? copied
-                  ? contactSection.copiedLabel
-                  : contactSection.copyLabel
-                : contactSection.phoneLabel}
-            </span>
-            <span className="mt-1.5 block font-display text-[clamp(1.55rem,7.6vw,4rem)] leading-none font-black whitespace-nowrap tabular-nums">
-              {phone.display}
-            </span>
-          </span>
           <span
-            aria-hidden
-            className="clip-cut-sm grid size-12 shrink-0 place-items-center bg-bg-main text-accent-yellow transition-transform duration-300 sm:size-14"
+            aria-live="polite"
+            className="font-mono text-[0.65rem] font-bold tracking-widest uppercase opacity-70"
           >
-            {desktop ? (
-              copied ? (
-                <CheckIcon weight="bold" className="size-6" />
-              ) : (
-                <CopyIcon weight="bold" className="size-6" />
-              )
-            ) : (
-              <ArrowUpIcon weight="bold" className="size-6 rotate-45" />
-            )}
+            {desktop
+              ? copied
+                ? contactSection.copiedLabel
+                : contactSection.copyLabel
+              : contactSection.phoneLabel}
+          </span>
+          <span className="font-display text-2xl leading-none font-black whitespace-nowrap tabular-nums">
+            {phone.display}
           </span>
         </a>
 
-        <div className="mt-7 grid grid-cols-1 gap-y-7 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-[5rem_1fr_1.1fr_1.4fr] lg:gap-12">
-          {/* Лого (+ «нагору» на телефоні) */}
-          <div className="flex items-center justify-between gap-4 sm:col-span-3 lg:col-span-1 lg:block">
+        {/* Розділи — одним рядком */}
+        <nav
+          aria-label={contactSection.navLabel}
+          className="mt-6 flex flex-wrap items-center gap-x-7 gap-y-1 border-b border-border-subtle pb-5 sm:mt-0 sm:gap-x-9"
+        >
+          {navigation.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="inline-flex min-h-11 items-center text-sm text-text-muted transition-colors duration-200 hover:text-accent-yellow"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="mt-8 grid gap-8 sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-[1fr_1fr_1.3fr] lg:gap-12">
+          {/* Лого + «нагору» */}
+          <div className="flex items-center justify-between gap-4 sm:col-span-2 lg:col-span-1 lg:justify-start lg:gap-8">
             <a
               href="#"
               aria-label={`${brand.name}, нагору`}
-              className="block size-20"
+              className="block size-24 shrink-0 lg:size-28"
             >
               <img
                 src={logoImg}
                 alt={brand.name}
-                width={80}
-                height={80}
+                width={112}
+                height={112}
                 loading="lazy"
                 className="h-full w-full object-contain"
               />
@@ -175,30 +185,35 @@ export default function Contact() {
               type="button"
               aria-label={contactSection.upLabel}
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="clip-cut-sm grid size-12 shrink-0 place-items-center border border-accent-yellow/50 text-accent-yellow transition-[background-color,color,transform] duration-200 hover:bg-accent-yellow hover:text-bg-main active:scale-90 lg:hidden"
+              className="clip-cut-sm grid size-12 shrink-0 place-items-center border border-accent-yellow/50 text-accent-yellow transition-[background-color,color,transform] duration-200 hover:bg-accent-yellow hover:text-bg-main active:scale-90"
             >
               <ArrowUpIcon aria-hidden weight="bold" className="size-5" />
             </button>
           </div>
 
-          {/* Розділи */}
-          <nav aria-label={contactSection.navLabel}>
-            <p className={HEADING}>{contactSection.navLabel}</p>
-            <ul className="mt-2 grid grid-cols-3 gap-x-3 sm:grid-cols-2 lg:grid-cols-1">
-              {navigation.map((item) => (
-                <li key={item.href}>
-                  <a href={item.href} className={LINK}>
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
           {/* Месенджери */}
           <div>
             <p className={HEADING}>{contactSection.messengersLabel}</p>
-            <ul className="mt-2">
+            <ul className="mt-1">
+              <li className="hidden sm:block">
+                <a
+                  href={phone.href}
+                  onClick={onPhoneClick}
+                  aria-label={`${phone.label} ${phone.display}`}
+                  className={LINK}
+                >
+                  <PhoneCallIcon
+                    aria-hidden
+                    weight="light"
+                    className="size-5 text-accent-yellow"
+                  />
+                  <span aria-live="polite">
+                    {desktop && copied
+                      ? contactSection.copiedLabel
+                      : phone.display}
+                  </span>
+                </a>
+              </li>
               {messengers.map((c) => {
                 const Icon = ICONS[c.icon];
                 return (
@@ -214,7 +229,7 @@ export default function Contact() {
                         weight="light"
                         className="size-5 text-accent-yellow"
                       />
-                      {c.display}
+                      {MESSENGER_NAME[c.id] ?? c.display}
                     </a>
                   </li>
                 );
@@ -222,32 +237,32 @@ export default function Contact() {
             </ul>
           </div>
 
-          {/* Де і коли */}
-          <div className="sm:col-span-1 lg:col-span-1">
+          {/* Студії та графік */}
+          <div>
             <p className={HEADING}>{contactSection.whereLabel}</p>
-            <ul className="mt-3 grid gap-3 text-text-muted">
+            <ul className="mt-1 text-text-muted">
               {locations.map((loc) => (
                 <li key={loc.id}>
                   <a
                     href={loc.mapUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-start gap-3 transition-colors duration-200 hover:text-accent-yellow"
+                    className="flex min-h-11 items-center gap-3 transition-colors duration-200 hover:text-accent-yellow"
                   >
                     <MapPinIcon
                       aria-hidden
                       weight="bold"
-                      className="mt-0.5 size-5 shrink-0 text-accent-yellow"
+                      className="size-5 shrink-0 text-accent-yellow"
                     />
                     <span>{loc.address}</span>
                   </a>
                 </li>
               ))}
-              <li className="flex items-start gap-3">
+              <li className="flex min-h-11 items-center gap-3">
                 <ClockIcon
                   aria-hidden
                   weight="bold"
-                  className="mt-0.5 size-5 shrink-0 text-accent-yellow"
+                  className="size-5 shrink-0 text-accent-yellow"
                 />
                 {business.workHours}
               </li>
@@ -256,7 +271,7 @@ export default function Contact() {
         </div>
 
         {/* Права + розробник */}
-        <div className="mt-6 flex flex-col gap-1.5 border-t border-border-subtle py-4 font-mono text-[0.65rem] tracking-widest text-text-dim uppercase sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-8 flex flex-col gap-1.5 border-t border-border-subtle py-4 font-mono text-[0.65rem] tracking-widest text-text-dim uppercase sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {brand.since}–{year} {brand.name}. {contactSection.rights}
           </p>

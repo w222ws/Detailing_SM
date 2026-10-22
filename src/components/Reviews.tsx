@@ -1,30 +1,28 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { domAnimation, LazyMotion, m } from 'motion/react';
-import {
-  ArrowsHorizontalIcon,
-  ArrowUpRightIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
-  QuotesIcon,
-  StarIcon,
-} from '@phosphor-icons/react';
+import { ArrowUpRightIcon, QuotesIcon, StarIcon } from '@phosphor-icons/react';
 import { reviews, type Review } from '../config/reviews';
 import { REVIEW_PATH, reviewPage } from '../config/review';
 import { locations } from '../config/locations';
 
 /* ==========================================================================
    #reviews — стопка відгуків, яку гортаєш пальцем.
-   • Велика контурна цифра за заголовком — чесна кількість відгуків
-     (не вигадана оцінка), той самий прийом, що й у «Наших роботах».
    • Картка — clip-cut + border + bg-bg-elevated. Великий знак лапок у
-     кутку (декор), моно-тег «ВІДГУК 0X» замість бейджа платформи,
-     аватар-квадрат трохи «перекошений» на власний кут (id → tilt) —
-     стопка виглядає як купка реальних фотокарток, а не однакові плитки.
-   • Над стопкою — підказка «Перетягни картку» зі стрілками, гасне після
-     першого свайпу/тапу/кліку стрілки.
-   • Під стопкою — лічильник «01 / 06» + стрілки (десктоп), мобільний —
-     лише свайп.
-   Фон — хекс-контури у бренд-мові Works/Services/Process. Без glass.
+     кутку (декор), аватар-квадрат трохи «перекошений» на власний кут
+     (id → tilt) — стопка виглядає як купка реальних фотокарток, а не
+     однакові плитки. Рейтинг — класичні 5 зірок (заповнені/контурні).
+   • Над заголовком — чесний агрегат: середня оцінка + ті самі 5 зірок
+     + кількість відгуків з Google. Те, чого бракувало: людина бачить
+     підсумок одразу, а не вираховує його сама по картках.
+   • Жодних підказок «перетягни картку», жодного лічильника й кнопок
+     гортання під стопкою — сама стопка (глибина видно по картках ззаду),
+     свайп, тап і стрілки клавіатури вже покривають керування, зайва
+     панель під нею тільки дублювала те саме.
+   • CTA «Залишити відгук» — без стрілки, що крутиться; замість неї
+     жовта смужка зліва виростає при наведенні (той самий прийом, що в
+     картці послуги), і мітка «Google» — куди саме веде посилання.
+   Фон — соти (bg-honeycomb, як у Works/FAQ) + зрізані панелі
+   (clip-cut/clip-cut-sm) поверх — та сама мова, що й по всьому сайту.
    Механіка стопки (fly/back/onDown/onMove/onUp) — як була: позиція під
    час перетягування пишеться прямо в DOM, без React-стану, тому не
    лагає. Вертикальний свайп не перехоплюється — сторінка скролиться як
@@ -43,7 +41,9 @@ const reveal = (delay = 0) => ({
   transition: { duration: 0.7, delay, ease: EASE },
 });
 
-const pad2 = (n: number) => String(n).padStart(2, '0');
+/* Чесний агрегат, порахований з тих самих даних, а не вигаданий */
+const avgRating =
+  reviews.reduce((sum, r) => sum + r.rating, 0) / Math.max(1, reviews.length);
 
 /* Стабільний «нахил» від id — аватари лежать не рівно, як фотокартки */
 const tilt = (id: string) => {
@@ -60,28 +60,34 @@ const REST = [
 ];
 const REST_HIDDEN = 'translate3d(0,28px,0) scale(0.91)';
 
-/* Контур шестикутника для фону — тримає бренд-мову з інших секцій */
-function HexOutline({ className }: { className?: string }) {
+/* П'ять зірок, завжди п'ять — заповнені жовтим рівно по оцінці,
+   решта контуром. Той самий компонент і в картці, і в агрегаті
+   над заголовком, щоб обидва місця говорили однією мовою. */
+function StarRow({
+  rating,
+  size = 'size-3.5',
+}: {
+  rating: number;
+  size?: string;
+}) {
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 100 115.47"
-      preserveAspectRatio="none"
-      className={cx('pointer-events-none', className)}
-    >
-      <polygon
-        points="50,1 99,29.5 99,86 50,114.5 1,86 1,29.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
+    <span className="inline-flex gap-0.5" aria-hidden>
+      {Array.from({ length: 5 }, (_, i) => (
+        <StarIcon
+          key={i}
+          weight={i < rating ? 'fill' : 'regular'}
+          className={cx(
+            size,
+            i < rating ? 'text-accent-yellow' : 'text-border-subtle/50',
+          )}
+        />
+      ))}
+    </span>
   );
 }
 
 /* -------------------- Картка відгуку -------------------- */
-function Card({ review, index }: { review: Review; index: number }) {
+function Card({ review }: { review: Review }) {
   const initial = review.name.trim().charAt(0).toUpperCase() || '?';
 
   return (
@@ -93,37 +99,25 @@ function Card({ review, index }: { review: Review; index: number }) {
         className="pointer-events-none absolute -top-4 -right-4 size-28 text-accent-yellow/10 sm:-top-6 sm:-right-6 sm:size-36"
       />
 
-      <figcaption className="relative flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span
-            aria-hidden
-            style={{ transform: `rotate(${tilt(review.id)}deg)` }}
-            className="clip-cut-sm grid size-12 shrink-0 place-items-center bg-accent-yellow font-display text-lg font-black text-bg-main"
-          >
-            {initial}
-          </span>
-          <div className="min-w-0 flex-1">
-            <span className="block truncate font-display text-base font-bold text-text-main uppercase sm:text-lg">
-              {review.name}
-            </span>
-            <span
-              className="mt-1 flex gap-0.5 text-accent-yellow"
-              aria-label={`${review.rating} з 5`}
-            >
-              {Array.from({ length: review.rating }, (_, i) => (
-                <StarIcon
-                  key={i}
-                  aria-hidden
-                  weight="fill"
-                  className="size-3.5"
-                />
-              ))}
-            </span>
-          </div>
-        </div>
-        <span className="relative inline-flex shrink-0 items-center bg-accent-yellow/15 px-2 py-1 font-mono text-[0.6rem] font-bold tracking-widest text-accent-yellow uppercase">
-          Відгук {pad2(index + 1)}
+      <figcaption className="relative flex items-center gap-3.5">
+        <span
+          aria-hidden
+          style={{ transform: `rotate(${tilt(review.id)}deg)` }}
+          className="clip-cut-sm grid size-12 shrink-0 place-items-center bg-accent-yellow font-display text-lg font-black text-bg-main"
+        >
+          {initial}
         </span>
+        <div className="min-w-0 flex-1">
+          <span className="block truncate font-display text-base font-bold text-text-main uppercase sm:text-lg">
+            {review.name}
+          </span>
+          <span
+            className="mt-1 block"
+            aria-label={`Оцінка ${review.rating} з 5`}
+          >
+            <StarRow rating={review.rating} />
+          </span>
+        </div>
       </figcaption>
 
       <span
@@ -141,7 +135,6 @@ function Card({ review, index }: { review: Review; index: number }) {
 /* -------------------- Секція -------------------- */
 export function Reviews() {
   const [order, setOrder] = useState(() => reviews.map((_, i) => i));
-  const [interacted, setInteracted] = useState(false);
   const stack = useRef<HTMLDivElement>(null);
   const drag = useRef<{
     x: number;
@@ -160,7 +153,6 @@ export function Reviews() {
   const fly = (dir: 1 | -1) => {
     const card = topCard();
     if (!card || busy.current) return;
-    setInteracted(true);
     busy.current = true;
     card.style.transition = 'transform 0.3s ease-in';
     card.style.transform = `translate3d(${dir * window.innerWidth}px,0,0) rotate(${dir * 26}deg)`;
@@ -231,24 +223,25 @@ export function Reviews() {
     else if (e.key === 'ArrowLeft') fly(-1);
   };
 
-  const current = order[0] + 1;
-
   return (
     <LazyMotion features={domAnimation} strict>
       <section
         id="reviews"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон: хекс-контури, бренд-мова з інших секцій */}
+        {/* Фон: соти (та сама текстура, що й у Works/FAQ) + зрізані панелі зверху */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
         >
-          <HexOutline className="absolute -top-10 -right-12 size-60 rotate-[10deg] text-border-subtle/50 sm:size-80" />
-          <HexOutline className="absolute -bottom-16 -left-12 size-56 -rotate-[14deg] text-accent-yellow/10 sm:size-72" />
-          <HexOutline className="absolute top-1/2 left-[8%] hidden size-40 rotate-[20deg] text-border-subtle/40 lg:block" />
-          <HexOutline className="absolute right-[6%] bottom-[14%] hidden size-28 -rotate-[18deg] text-border-subtle/50 lg:block" />
-          <HexOutline className="absolute top-[16%] left-[42%] hidden size-20 rotate-[30deg] text-accent-yellow/10 lg:block" />
+          <div className="bg-honeycomb absolute inset-0" />
+          <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-bg-main via-bg-main/40 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-bg-main via-bg-main/40 to-transparent" />
+
+          <div className="clip-cut absolute -top-12 -right-16 size-64 rotate-[9deg] border border-border-subtle/40 sm:size-96" />
+          <div className="clip-cut-sm absolute -bottom-10 -left-10 size-52 -rotate-[12deg] border border-accent-yellow/10 sm:size-72" />
+          <div className="clip-cut-sm absolute top-1/3 left-[6%] hidden size-36 rotate-[16deg] border border-border-subtle/25 lg:block" />
+          <div className="clip-cut absolute right-[10%] bottom-[10%] hidden size-28 -rotate-[20deg] border border-border-subtle/30 lg:block" />
 
           {/* Тонкі жовті «пил-смуги» */}
           <div className="absolute top-16 left-0 h-px w-24 bg-linear-to-r from-accent-yellow/50 to-transparent sm:w-40" />
@@ -258,29 +251,30 @@ export function Reviews() {
         <div className="container-site relative grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
           {/* ========== Ліва колонка: заголовок + CTA ========== */}
           <div>
-            <div className="relative">
-              {/* Велика контурна цифра — чесна кількість відгуків, не оцінка */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -top-2 right-0 z-0 hidden font-display font-black text-transparent uppercase select-none sm:block [-webkit-text-stroke:1px_var(--color-border-strong)]"
-                style={{ fontSize: 'clamp(4rem, 9vw, 7rem)', lineHeight: 0.75 }}
-              >
-                {pad2(reviews.length)}
+            <m.h2
+              {...reveal()}
+              className="font-display text-4xl text-text-main uppercase sm:text-5xl lg:text-6xl"
+            >
+              Відгуки <span className="text-accent-yellow">клієнтів</span>
+            </m.h2>
+
+            {/* Агрегат — те, чого бракувало: підсумок одразу, а не
+                вираховуй сам по картках. Порахований, не вигаданий. */}
+            <m.div {...reveal(0.06)} className="mt-4 flex items-center gap-3">
+              <span className="font-display text-3xl font-black text-accent-yellow sm:text-4xl">
+                {avgRating.toFixed(1)}
               </span>
-              <m.h2
-                {...reveal()}
-                className="relative z-10 font-display text-4xl text-text-main uppercase sm:text-5xl lg:text-6xl"
-              >
-                Що кажуть <span className="text-accent-yellow">клієнти</span>
-              </m.h2>
-            </div>
+              <StarRow rating={Math.round(avgRating)} size="size-4" />
+              <span className="font-mono text-xs text-text-dim uppercase tracking-wide">
+                {reviews.length} відгуків · Google
+              </span>
+            </m.div>
 
             <m.p
-              {...reveal(0.08)}
-              className="relative z-10 mt-4 max-w-sm text-sm text-text-muted sm:text-base"
+              {...reveal(0.12)}
+              className="mt-3 max-w-sm text-sm text-text-muted sm:text-base"
             >
-              {reviews.length} реальних відгуків від наших клієнтів — гортай
-              стопку праворуч.
+              Були в нас? Поділіться своїм відгуком — нижче.
             </m.p>
 
             <m.div {...reveal(0.15)} className="relative z-10 mt-8 lg:mt-10">
@@ -294,16 +288,17 @@ export function Reviews() {
                     href={loc.reviewUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="clip-cut group flex items-center justify-between gap-4 border border-border-subtle bg-bg-elevated p-4 shadow-card transition-colors duration-200 hover:border-accent-yellow active:scale-[0.99] sm:p-5"
+                    className="clip-cut group relative flex items-center gap-4 overflow-hidden border border-border-subtle bg-bg-elevated p-4 shadow-card transition-colors duration-200 hover:border-accent-yellow/50 active:scale-[0.99] sm:p-5"
                   >
-                    <span className="min-w-0 truncate font-display text-sm font-bold text-text-main uppercase sm:text-base">
-                      {loc.address}
-                    </span>
                     <span
                       aria-hidden
-                      className="clip-cut-sm grid size-10 shrink-0 place-items-center bg-accent-yellow text-bg-main transition-transform duration-300 group-hover:rotate-45"
-                    >
-                      <ArrowUpRightIcon weight="bold" className="size-5" />
+                      className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 bg-accent-yellow transition-transform duration-300 ease-out group-hover:scale-y-100"
+                    />
+                    <span className="min-w-0 flex-1 truncate font-display text-sm font-bold text-text-main uppercase sm:text-base">
+                      {loc.address}
+                    </span>
+                    <span className="shrink-0 font-mono text-[0.6rem] font-bold tracking-widest text-text-dim uppercase transition-colors duration-200 group-hover:text-accent-yellow">
+                      Google
                     </span>
                   </a>
                 ))}
@@ -324,24 +319,8 @@ export function Reviews() {
             </m.div>
           </div>
 
-          {/* ========== Права колонка: стопка карток + лічильник ========== */}
+          {/* ========== Права колонка: стопка карток ========== */}
           <m.div {...reveal(0.1)}>
-            {/* Підказка «тягни» — гасне після першого свайпу/тапу/кліку стрілки */}
-            <div
-              aria-hidden
-              className={cx(
-                'mx-auto mb-3 flex w-full max-w-md items-center gap-2 font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase transition-opacity duration-500',
-                interacted ? 'opacity-0' : 'opacity-100',
-              )}
-            >
-              <ArrowsHorizontalIcon
-                aria-hidden
-                weight="bold"
-                className="size-3.5 text-accent-yellow"
-              />
-              Перетягни картку
-            </div>
-
             <div
               ref={stack}
               role="group"
@@ -368,41 +347,9 @@ export function Reviews() {
                     zIndex: reviews.length - pos,
                   }}
                 >
-                  <Card review={reviews[cardIndex]} index={cardIndex} />
+                  <Card review={reviews[cardIndex]} />
                 </div>
               ))}
-            </div>
-
-            {/* Лічильник + стрілки під стопкою */}
-            <div className="mx-auto mt-6 flex w-full max-w-md items-center gap-4">
-              <span className="font-mono text-sm font-bold tracking-widest uppercase">
-                <span className="text-accent-yellow">{pad2(current)}</span>
-                <span className="mx-1 text-text-dim">/</span>
-                <span className="text-text-muted">{pad2(reviews.length)}</span>
-              </span>
-              <span aria-hidden className="h-px flex-1 bg-border-subtle" />
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => fly(-1)}
-                  aria-label="Попередній відгук"
-                  className="clip-cut-sm grid size-10 place-items-center border border-border-strong text-text-main transition-colors hover:border-accent-yellow hover:text-accent-yellow"
-                >
-                  <CaretLeftIcon aria-hidden weight="bold" className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fly(1)}
-                  aria-label="Наступний відгук"
-                  className="clip-cut-sm grid size-10 place-items-center border border-border-strong text-text-main transition-colors hover:border-accent-yellow hover:text-accent-yellow"
-                >
-                  <CaretRightIcon
-                    aria-hidden
-                    weight="bold"
-                    className="size-4"
-                  />
-                </button>
-              </div>
             </div>
           </m.div>
         </div>

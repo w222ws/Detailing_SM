@@ -286,7 +286,7 @@ function Header() {
           style={{ display: 'grid' }}
         >
           <div className="overflow-hidden">
-            <nav aria-label="Мобільна навігація" className="px-5 pt-4">
+            <nav aria-label="Мобільна навігація" className="px-5 pt-5">
               {site.navigation.map((item, i) => (
                 <a
                   key={item.href}
@@ -295,65 +295,65 @@ function Header() {
                   style={{
                     transitionDelay: isMenuOpen ? `${50 + i * 35}ms` : '0ms',
                   }}
-                  className={`flex items-baseline gap-3 border-b border-border-subtle py-3.5 font-display text-2xl font-black uppercase leading-none text-text-main transition-[opacity,transform] duration-300 active:text-accent-yellow ${
+                  className={`block rounded-control py-3 font-display text-2xl font-black uppercase leading-none text-text-main transition-[opacity,transform,color] duration-300 active:text-accent-yellow ${
                     isMenuOpen
                       ? 'translate-y-0 opacity-100'
                       : 'translate-y-2 opacity-0'
                   }`}
                 >
-                  <span className="font-mono text-[0.65rem] font-medium tracking-widest text-accent-yellow">
-                    0{i + 1}
-                  </span>
                   {item.label}
                 </a>
               ))}
             </nav>
 
-            <div className="px-5 py-4">
-              <p className="eyebrow mb-2.5">Записатися</p>
-              <div className="grid grid-cols-3 gap-2">
-                {CHANNELS.map(({ id, short, url, Icon }) => (
-                  <a
-                    key={id}
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    onClick={closeAll}
-                    className="flex flex-col items-center gap-2 border border-border-subtle bg-bg-card px-2 py-4 transition-[border-color,transform] duration-200 active:scale-95 active:border-accent-yellow/60"
-                  >
-                    <Icon
-                      aria-hidden
-                      size={22}
-                      weight="light"
-                      className="text-accent-yellow"
-                    />
-                    <span className="font-mono text-[0.62rem] uppercase tracking-wider text-text-muted">
-                      {short}
-                    </span>
-                  </a>
-                ))}
+            <div className="px-5 pb-5 pt-2">
+              <div className="clip-cut-sm border border-border-subtle bg-bg-elevated/60 p-3.5">
+                <div className="grid grid-cols-3 gap-2">
+                  {CHANNELS.map(({ id, short, url, Icon }) => (
+                    <a
+                      key={id}
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      onClick={closeAll}
+                      className="flex flex-col items-center gap-2 rounded-control py-3 transition-[background-color,transform] duration-200 active:scale-95 active:bg-accent-yellow/10"
+                    >
+                      <Icon
+                        aria-hidden
+                        size={22}
+                        weight="light"
+                        className="text-accent-yellow"
+                      />
+                      <span className="font-mono text-[0.62rem] uppercase tracking-wider text-text-muted">
+                        {short}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+
+                <a
+                  href={site.contacts.phone.href}
+                  onClick={closeAll}
+                  className="btn-primary relative mt-3 h-12 w-full overflow-hidden text-base"
+                >
+                  <span aria-hidden className={SWEEP} />
+                  <PhoneCallIcon
+                    aria-hidden
+                    size={17}
+                    weight="fill"
+                    className="relative"
+                  />
+                  <span className="relative">
+                    {site.contacts.phone.display}
+                  </span>
+                </a>
               </div>
 
-              <a
-                href={site.contacts.phone.href}
-                onClick={closeAll}
-                className="btn-primary relative mt-2.5 h-12 w-full overflow-hidden text-base"
-              >
-                <span aria-hidden className={SWEEP} />
-                <PhoneCallIcon
-                  aria-hidden
-                  size={17}
-                  weight="fill"
-                  className="relative"
-                />
-                <span className="relative">{site.contacts.phone.display}</span>
-              </a>
+              <p className="mt-3 flex items-center gap-2 text-xs text-text-dim">
+                <ClockIcon aria-hidden size={13} weight="bold" />
+                {site.business.workHours}
+              </p>
             </div>
-
-            <p className="flex items-center gap-2 px-5 pb-4 text-xs text-text-dim">
-              <ClockIcon aria-hidden size={13} weight="bold" />
-              {site.business.workHours}
-            </p>
           </div>
         </div>
       </header>

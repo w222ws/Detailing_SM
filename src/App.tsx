@@ -3,7 +3,6 @@ import Hero from './components/Hero';
 import Marquee from './components/Marquee';
 import Services from './components/Services';
 import Works from './components/Works';
-import Process from './components/Process';
 import Partners from './components/Partners';
 import Reviews from './components/Reviews';
 import FAQ from './components/FAQ';
@@ -26,7 +25,6 @@ export default function App() {
         <Marquee />
         <Services />
         <Works />
-        <Process />
         <Partners />
         <Reviews />
         <FAQ />

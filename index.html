@@ -130,28 +130,29 @@
         pointer-events: none;
       }
 
-      /* Панелі: вісім вертикальних колонок, два відтінки графіту */
+      /* Заслінка: дві суцільні половини фірмового тёмного. Коли сайт
+         готовий — роз'їжджаються в боки, як ворота боксу. */
       .pl-strips {
         position: absolute;
         inset: 0;
         display: grid;
-        grid-template-columns: repeat(8, 1fr);
+        grid-template-columns: 1fr 1fr;
       }
-      .pl-strips i {
-        margin-right: -1px;
-        background: #0c0d11;
-        transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1);
-        transition-delay: 0ms;
-      }
-      .pl-strips i:nth-child(even) {
+      .pl-half {
         background: #07070a;
+        transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
       }
-      #preloader.is-done .pl-strips i {
-        transform: translateY(-101%);
-        transition-delay: calc(var(--i) * 45ms);
+      .pl-half-r {
+        margin-left: -1px;
+      }
+      #preloader.is-done .pl-half-l {
+        transform: translateX(-101%);
+      }
+      #preloader.is-done .pl-half-r {
+        transform: translateX(101%);
       }
 
-      /* Коло, що крутиться */
+      /* Кружок, що крутиться */
       .pl-ring {
         position: relative;
         width: 50px;
@@ -187,7 +188,7 @@
         .pl-ring svg {
           animation-duration: 3s;
         }
-        .pl-strips i,
+        .pl-half,
         .pl-ring {
           transition-duration: 0.01ms;
           transition-delay: 0ms !important;
@@ -437,9 +438,8 @@
     </noscript>
     <div id="preloader" role="status" aria-live="polite">
       <div class="pl-strips" aria-hidden="true">
-        <i style="--i: 0"></i><i style="--i: 1"></i><i style="--i: 2"></i
-        ><i style="--i: 3"></i><i style="--i: 4"></i><i style="--i: 5"></i
-        ><i style="--i: 6"></i><i style="--i: 7"></i>
+        <div class="pl-half pl-half-l"></div>
+        <div class="pl-half pl-half-r"></div>
       </div>
       <div class="pl-ring">
         <svg viewBox="0 0 50 50" fill="none" aria-hidden="true">

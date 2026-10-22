@@ -1,28 +1,44 @@
 import { useEffect, useRef, useState } from 'react';
 import { domAnimation, LazyMotion, m } from 'motion/react';
-import {
-  MagnifyingGlassPlusIcon,
-  SealCheckIcon,
-  XIcon,
-} from '@phosphor-icons/react';
+import { XIcon } from '@phosphor-icons/react';
 import { certificate, partners } from '../config/partners';
 
 /* ==========================================================================
    #partners — «Партнери та сертифікація». Місток довіри між «Процесом»
    (як ми працюємо) і «Відгуками» (що кажуть клієнти): перш ніж вірити
    на слово, можна глянути, з чим ми працюємо.
-   • Зліва — фото сертифікату на всю висоту, клік відкриває його на весь
-     екран (документ треба читати, тому значення має великий розмір).
-   • Справа — ОДНА панель-«директорія партнерів» (та сама вага й геометрія,
-     що й у сертифіката — clip-cut, border, header-бар, як у вікна чату в
-     FAQ), а 4 лого всередині розділені тонкими лініями (divide), а не
-     розкидані окремими квадратами з порожнечею — реальні лого є готовими
-     прямокутними лейблами, тому grayscale/квадрат тільки псували вигляд.
-     Панель — «скло»: напівпрозорий фон + backdrop-blur, крізь неї видно
-     соти заднього фону. Це СТАТИЧНИЙ ефект на одній-єдиній панелі (не
-     анімація й не десяток скляних комірок, як було в старій галереї
-     Works) — тож дешево й без лагів, backdrop-blur рахується один раз.
-   Фон — bg-honeycomb, як у Works/FAQ.
+   • Зліва — фото сертифікату: та сама геометрія, що й у повзунка
+     ДО/ПІСЛЯ в Works (aspect-[4/3] → sm:[16/10] → lg:[16/9], ті самі
+     кутові «візирі»), щоб два технічні «документи» сайту виглядали
+     однією мовою. Жодного тексту поверх фото — саме фото й курсор
+     cursor-zoom-in кажуть, що на нього можна натиснути.
+   • Справа — лого партнерів їдуть стрічкою, тим самим прийомом руху,
+     що й фірмова Marquee-смуга під Hero (той самий translateX(-50%) із
+     дублюванням вмісту для безшовного циклу), але зроблено інакше:
+     рядок рівний, без нахилу й без жирного тексту-стіни, темп спокійний
+     — це список сертифікацій, а не рекламна вивіска. Стрічка ставиться
+     на паузу, щойно курсор заходить у неї (Marquee ніколи не зупиняється
+     — тут навпаки, бо лого хочеться роздивитись).
+     Було: скляна glassmorphism-панель, потім ряд великих карток із
+     заклепками, потім лакована панель із відбиттям, потім наліпки під
+     кутом з hover-фізикою — усі типовий дефолт, завеликі на вузькому
+     екрані або надто «ефектні». Прибрано.
+   • Підпис над лого — просто дрібний сірий текст «Партнери», без
+     рамки, іконки й моно-шрифту: не кожному блоку потрібен власний
+     «бейдж».
+   • Лого — готові AVIF з прозорим фоном (оброблені заздалегідь:
+     вихідні файли мали суцільну підложку, фон прибрано, усі кольори
+     приведено до одного білого силуету; AVIF важить у 2–4 рази менше
+     за той самий PNG).
+   • Фон — соти прибрано (вони вже в Works і FAQ, тут було б втретє те
+     саме). Замість них — контури зрізаних панелей + шестикутників, як
+     «мова фону» в Послугах, але своя композиція: ліва купка форм тягнеться
+     до сертифікату, права — до наліпок партнерів. На відміну від Послуг,
+     де ці контури просто лежать на місці, тут вони самі «збираються в
+     кадр» — кожна форма одного разу залітає зі свого кута й трохи завеликого
+     масштабу та кута, і впадає на своє місце, ніби деталі конструктора
+     складаються в гараж. Тільки opacity/scale/rotate через whileInView,
+     без скрол-листенерів і без filter — дешево.
    Дані — з config/partners.ts, нічого не захардкоджено; розділ ховається,
    якщо картинок ще не додали.
    ========================================================================== */
@@ -38,6 +54,21 @@ const reveal = (delay = 0) => ({
   viewport: { once: true, margin: '-60px' },
   transition: { duration: 0.7, delay, ease: EASE },
 });
+
+/* Подвоєний список лого — один «блок» стрічки. Сама стрічка рендерить
+   цей блок двічі й їде на translateX(-50%), тому склейка непомітна
+   незалежно від того, скільки лого в конфізі (мало — блок просто
+   довший за рахунок дублю, а не рідший за рахунок пауз). */
+const LOGO_LOOP = [...partners, ...partners];
+
+/* Кутові «візирі» рамки — та сама деталь, що й у повзунка ДО/ПІСЛЯ
+   в Works, щоб обидва «документи» сайту читались одним інструментом. */
+const VIEWFINDER_CORNERS = [
+  'top-4 left-4 border-t-2 border-l-2',
+  'top-4 right-4 border-t-2 border-r-2',
+  'bottom-4 left-4 border-b-2 border-l-2',
+  'bottom-4 right-4 border-b-2 border-r-2',
+];
 
 /* Контур шестикutника для фону — та сама бренд-мова, що й по сайту */
 function HexOutline({ className }: { className?: string }) {
@@ -116,26 +147,87 @@ export function Partners() {
         id="partners"
         className="relative overflow-hidden bg-bg-main py-16 sm:py-20 lg:py-28"
       >
-        {/* Соти — та сама текстура, що й у Works/FAQ, з м'яким переходом по краях */}
-        <div
-          aria-hidden
-          className="bg-honeycomb pointer-events-none absolute inset-0"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-bg-main via-bg-main/50 to-transparent"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-bg-main via-bg-main/50 to-transparent"
-        />
-
+        {/* Фон: зрізані панелі й шестикутники «злітають» на місце один раз —
+            ліва група тягнеться до сертифікату, права до наліпок партнерів */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
         >
-          <HexOutline className="absolute top-8 right-[10%] size-32 rotate-[14deg] text-border-subtle/40 sm:size-48" />
-          <HexOutline className="absolute bottom-10 left-[6%] hidden size-28 -rotate-[10deg] text-accent-yellow/10 lg:block" />
+          <m.div
+            initial={{ opacity: 0, scale: 1.4, rotate: 37 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: 11 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.9, delay: 0.05, ease: EASE }}
+            className="clip-cut absolute top-[-3.5rem] right-[-5rem] size-64 border border-border-subtle/40 sm:size-96"
+          />
+          <m.div
+            initial={{ opacity: 0, scale: 1.4, rotate: -41 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: -13 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.9, delay: 0.12, ease: EASE }}
+            className="clip-cut-sm absolute bottom-[-2.5rem] left-[-3rem] size-52 border border-accent-yellow/10 sm:size-72"
+          />
+          <m.div
+            initial={{ opacity: 0, scale: 1.4, rotate: 32 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: 8 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.9, delay: 0.2, ease: EASE }}
+            className="clip-cut-sm absolute top-1/2 left-[8%] hidden size-36 border border-border-subtle/25 lg:block"
+          />
+
+          <m.div
+            initial={{ opacity: 0, scale: 1.4, rotate: -43 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: -9 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.85, delay: 0.18, ease: EASE }}
+            className="absolute top-12 left-[4%] size-24 text-border-subtle/35 sm:size-36"
+          >
+            <HexOutline className="size-full" />
+          </m.div>
+          <m.div
+            initial={{ opacity: 0, scale: 1.4, rotate: 46 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: 16 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.85, delay: 0.26, ease: EASE }}
+            className="absolute right-[14%] bottom-16 hidden size-28 text-accent-yellow/12 lg:block"
+          >
+            <HexOutline className="size-full" />
+          </m.div>
+          <m.div
+            initial={{ opacity: 0, scale: 1.4, rotate: -48 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: -20 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.85, delay: 0.3, ease: EASE }}
+            className="absolute top-[38%] right-[6%] hidden size-20 text-border-subtle/45 lg:block"
+          >
+            <HexOutline className="size-full" />
+          </m.div>
+          <m.div
+            initial={{ opacity: 0, scale: 1.4, rotate: 50 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: 24 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.85, delay: 0.36, ease: EASE }}
+            className="absolute bottom-[12%] left-[34%] hidden size-16 text-accent-yellow/10 lg:block"
+          >
+            <HexOutline className="size-full" />
+          </m.div>
+
+          <m.div
+            initial={{ opacity: 0, scaleX: 0 }}
+            whileInView={{ opacity: 1, scaleX: 1 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, delay: 0.45, ease: EASE }}
+            style={{ transformOrigin: 'right' }}
+            className="absolute top-16 right-0 h-px w-28 bg-linear-to-l from-accent-yellow/45 to-transparent sm:w-44"
+          />
+          <m.div
+            initial={{ opacity: 0, scaleX: 0 }}
+            whileInView={{ opacity: 1, scaleX: 1 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, delay: 0.5, ease: EASE }}
+            style={{ transformOrigin: 'left' }}
+            className="absolute bottom-24 left-0 h-px w-28 bg-linear-to-r from-accent-yellow/35 to-transparent sm:w-44"
+          />
         </div>
 
         <div className="container-site relative">
@@ -168,12 +260,8 @@ export function Partners() {
                 type="button"
                 onClick={() => setCertOpen(true)}
                 aria-label="Відкрити сертифікат на весь екран"
-                className="clip-cut group relative block aspect-[3/4] w-full overflow-hidden border border-border-subtle bg-bg-elevated text-left outline-none transition-colors duration-300 hover:border-accent-yellow/50 focus-visible:border-accent-yellow sm:aspect-[16/10] lg:aspect-auto lg:h-full lg:min-h-[22rem]"
+                className="clip-cut group relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden border border-border-subtle bg-bg-elevated text-left outline-none transition-colors duration-300 hover:border-accent-yellow/50 focus-visible:border-accent-yellow sm:aspect-[16/10] lg:aspect-[16/9]"
               >
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-linear-to-r from-accent-yellow/60 via-accent-yellow/15 to-transparent"
-                />
                 <img
                   src={certificate}
                   alt="Сертифікат"
@@ -181,66 +269,77 @@ export function Partners() {
                   decoding="async"
                   className="absolute inset-0 size-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                 />
-                <span className="pointer-events-none absolute bottom-4 left-4 inline-flex items-center gap-2 font-mono text-xs font-bold tracking-[0.2em] text-accent-yellow uppercase drop-shadow-[0_1px_6px_rgb(7_7_10/0.9)] sm:bottom-5 sm:left-6">
-                  <SealCheckIcon aria-hidden weight="fill" className="size-4" />
-                  Сертифікат
-                </span>
-                <span className="pointer-events-none absolute top-4 right-4 text-text-main drop-shadow-[0_1px_6px_rgb(7_7_10/0.9)] transition-colors duration-300 group-hover:text-accent-yellow sm:top-5 sm:right-5">
-                  <MagnifyingGlassPlusIcon
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgb(7_7_10/0.35))]"
+                />
+                {VIEWFINDER_CORNERS.map((c) => (
+                  <span
+                    key={c}
                     aria-hidden
-                    weight="bold"
-                    className="size-5"
+                    className={cx(
+                      'pointer-events-none absolute size-5 border-accent-yellow/0 transition-colors duration-300 group-hover:border-accent-yellow sm:size-7',
+                      c,
+                    )}
                   />
-                </span>
+                ))}
               </m.button>
             )}
 
             {partners.length > 0 && (
-              <m.div
-                {...reveal(certificate ? 0.2 : 0.15)}
-                className="clip-cut relative isolate flex flex-col overflow-hidden border border-white/15 bg-linear-to-br from-white/[0.09] via-bg-elevated/55 to-bg-elevated/75 shadow-card backdrop-blur-xl lg:h-full"
-              >
-                {/* Світлова пляма у кутку — ніби світло ловиться гранню скла.
-                    Статична, один раз намальована — не лагає. */}
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute -top-12 -left-12 -z-10 size-48 rounded-full bg-white/15 blur-3xl"
-                />
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-linear-to-r from-accent-yellow/80 via-accent-yellow/25 to-transparent"
-                />
-                {/* Шапка панелі — та сама мова, що й у вікна чату в FAQ */}
-                <div className="flex items-center gap-2.5 border-b border-white/15 bg-white/[0.04] px-5 py-4 sm:px-7">
-                  <SealCheckIcon
+              <div className="flex min-w-0 flex-col lg:h-full lg:justify-center">
+                <m.p
+                  {...reveal(certificate ? 0.2 : 0.15)}
+                  className="text-xs text-text-dim"
+                >
+                  Партнери
+                </m.p>
+
+                {/* Стрічка лого, той самий рух, що в Marquee під Hero
+                    (translateX(-50%), вміст подвоєний для безшовного циклу)
+                    — тільки рівна, без нахилу, і зупиняється під курсором. */}
+                <m.div
+                  {...reveal(certificate ? 0.3 : 0.25)}
+                  className="partners-marquee relative mt-5 w-full overflow-hidden"
+                >
+                  <div
                     aria-hidden
-                    weight="fill"
-                    className="size-4 text-accent-yellow"
+                    className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-linear-to-r from-bg-main to-transparent sm:w-14"
                   />
-                  <span className="font-mono text-xs font-bold tracking-widest text-text-dim uppercase">
-                    Офіційні партнери
-                  </span>
-                </div>
-                {/* Лого — одна директорія, розділена лініями, а не розкидані квадрати:
-                    реальні лого вже самі є прямокутними лейблами зі своїм фоном,
-                    тож ніякого grayscale чи примусового квадрата — тільки рівна сітка. */}
-                <div className="grid flex-1 grid-cols-2 divide-x divide-y divide-white/15">
-                  {partners.map((p) => (
-                    <div
-                      key={p.logo}
-                      className="group relative flex min-h-[6.5rem] items-center justify-center p-6 transition-colors duration-300 hover:bg-white/[0.07] sm:min-h-[7.5rem] sm:p-8"
-                    >
-                      <img
-                        src={p.logo}
-                        alt={p.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-8 w-full object-contain transition-transform duration-300 ease-out group-hover:scale-110 sm:h-9"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </m.div>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-linear-to-l from-bg-main to-transparent sm:w-14"
+                  />
+                  <div className="partners-marquee-track inline-flex items-center whitespace-nowrap">
+                    {[0, 1].map((rep) => (
+                      <div
+                        key={rep}
+                        aria-hidden={rep === 1}
+                        className="flex shrink-0 items-center"
+                      >
+                        {LOGO_LOOP.map((p, i) => (
+                          <div
+                            key={`${rep}-${i}`}
+                            className="flex shrink-0 items-center"
+                          >
+                            <img
+                              src={p.logo}
+                              alt={p.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="h-7 w-auto max-w-[6rem] object-contain opacity-75 drop-shadow-[0_3px_8px_rgb(0_0_0_/_0.5)] transition-opacity duration-300 hover:opacity-100 sm:h-8 sm:max-w-[7rem]"
+                            />
+                            <span
+                              aria-hidden
+                              className="mx-7 h-5 w-px shrink-0 bg-border-subtle/30 sm:mx-9 sm:h-6"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </m.div>
+              </div>
             )}
           </div>
         </div>

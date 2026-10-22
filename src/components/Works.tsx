@@ -13,7 +13,7 @@ import {
   CaretRightIcon,
   XIcon,
 } from '@phosphor-icons/react';
-import { compare, gallery } from '../config/works';
+import { compare, gallery, worksIntro } from '../config/works';
 
 /* ==========================================================================
    #works — «Наші роботи». Два блоки: повзунок ДО/ПІСЛЯ + галерея-соти.
@@ -105,6 +105,47 @@ function Compare({ before, after }: { before: string; after: string }) {
     pos.current = Math.min(100, Math.max(0, v));
     if (!frame.current) frame.current = requestAnimationFrame(paint);
   };
+
+  /* Разова «демонстрація» повзунка: щойно картка вперше попадає в
+     кадр — лінія сама проходить вліво-вправо й вертається на середину.
+     Не хитрість заради хитрості: людина одразу розуміє, що це можна
+     тягнути рукою, замість того щоб здогадуватись. Один раз за сесію,
+     через IntersectionObserver (не scroll-слухач), і той самий rAF-шлях
+     запису в --pos, що й ручне перетягування — нічого додатково важкого. */
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const path = [50, 21, 79, 50];
+    const SEG_MS = 420;
+
+    const sweep = () => {
+      const start = performance.now();
+      const total = SEG_MS * (path.length - 1);
+      const tick = (now: number) => {
+        const elapsed = now - start;
+        const segIdx = Math.min(path.length - 2, Math.floor(elapsed / SEG_MS));
+        const t = Math.min(1, (elapsed - segIdx * SEG_MS) / SEG_MS);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setPos(path[segIdx] + (path[segIdx + 1] - path[segIdx]) * eased);
+        if (elapsed < total) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        window.setTimeout(sweep, 350);
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fromPointer = (e: PointerEvent<HTMLDivElement>) => {
     const r = rect.current;
@@ -275,12 +316,16 @@ function Honeycomb({
               <m.div
                 key={photos[photo]}
                 className="hex-cell"
-                initial={{ opacity: 0, scale: 0.88 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{
+                  opacity: 0,
+                  scale: 0.75,
+                  rotate: k % 2 === 0 ? -5 : 5,
+                }}
+                whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{
-                  duration: 0.5,
-                  delay: (k % 5) * 0.05,
+                  duration: 0.55,
+                  delay: (r + k) * 0.05,
                   ease: EASE,
                 }}
               >
@@ -479,10 +524,16 @@ export function Works() {
           >
             Наші <span className="text-accent-yellow">роботи</span>
           </m.h2>
+          <m.p
+            {...reveal(0.1)}
+            className="mt-4 max-w-md text-sm text-text-muted sm:text-base"
+          >
+            {worksIntro}
+          </m.p>
 
           {compare && (
             <m.div
-              {...reveal(0.15)}
+              {...reveal(0.22)}
               className="mt-10 lg:mx-auto lg:mt-14 lg:max-w-3xl"
             >
               <Compare before={compare.before} after={compare.after} />
