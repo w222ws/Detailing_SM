@@ -160,7 +160,7 @@ function Carbon({ eyes, pupils, mouth }: CatRefs) {
         </g>
       </g>
 
-      {/* Ніс і рот. Рот міняється під час моргу — звідси ref */}
+      {/* Ніс і рот. Рот міняється під час моргу — звідси referal */}
       <path d="M149 137H166L157.5 147L149 137Z" fill="#07070a" />
       <path
         ref={mouth}
