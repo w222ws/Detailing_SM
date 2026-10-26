@@ -20,9 +20,13 @@ import { messengers } from '../config/site';
    Висота — accordion-panel/accordion-open (grid-template-rows, чистий CSS,
    без JS-вимірів).
 
-   Фон — абстрактні фігури: повернуті clip-cut панелі на hairline-рамках і
-   дві жовті смуги. Не соти: соти — це 4 градієнти на всю секцію, які
-   браузер перемальовує кожен кадр, поки акордеон міняє висоту.
+   Відкритий рядок — жовте питання, хрестик і трохи світліше тло, без
+   смуги зліва.
+
+   Фон — великий об'ємний «?» праворуч, що повільно похитується (.faq-qmark
+   в index.css: глибина шарами тіні, рух лише transform на власному шарі),
+   і абстрактні фігури зліва. Не соти: соти — це 4 градієнти на всю
+   секцію, які браузер перемальовує кожен кадр, поки акордеон міняє висоту.
 
    Дані — з config/faq.ts і config/site.ts.
    ========================================================================== */
@@ -74,15 +78,6 @@ function FaqRow({
         open && 'bg-bg-card/50',
       )}
     >
-      {/* жовта засічка зліва на відкритому рядку */}
-      <span
-        aria-hidden
-        className={cx(
-          'absolute inset-y-0 left-0 w-[3px] origin-top bg-accent-yellow transition-transform duration-300 ease-out',
-          open ? 'scale-y-100' : 'scale-y-0',
-        )}
-      />
-
       <button
         type="button"
         aria-expanded={open}
@@ -92,7 +87,7 @@ function FaqRow({
       >
         <span
           className={cx(
-            'font-display text-base leading-snug font-bold transition-colors duration-200 sm:text-xl',
+            'text-base leading-snug font-semibold transition-colors duration-200 sm:text-lg',
             open
               ? 'text-accent-yellow'
               : 'text-text-main group-hover/q:text-accent-yellow',
@@ -137,22 +132,24 @@ export function FAQ() {
         id="faq"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* ФОН — абстрактні фігури: повернуті clip-cut панелі, дві жовті
-            «пил-смуги» і світлові плями фіксованого розміру. Без сот. */}
+        {/* ФОН — об'ємний знак питання праворуч (стиль .faq-qmark в
+            index.css), жовте світло на нього, і абстрактні фігури зліва —
+            повернуті clip-cut панелі та жовта смуга. Без сот. */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
         >
           <div className="absolute -top-24 -left-32 h-[26rem] w-[26rem] bg-[radial-gradient(circle,rgb(255_245_0_/_0.08),transparent_70%)] sm:h-[38rem] sm:w-[38rem]" />
-          <div className="absolute -right-24 bottom-0 h-[22rem] w-[22rem] bg-[radial-gradient(circle,rgb(180_186_206_/_0.07),transparent_70%)] sm:h-[34rem] sm:w-[34rem]" />
+          <div className="absolute top-0 -right-20 h-[24rem] w-[24rem] bg-[radial-gradient(circle,rgb(255_245_0_/_0.09),transparent_68%)] lg:top-[12%] lg:right-[-4%] lg:h-[40rem] lg:w-[40rem]" />
 
           <div className="clip-cut absolute -top-20 -left-28 size-80 rotate-[-9deg] border border-border-subtle/65 sm:size-[30rem]" />
-          <div className="clip-cut absolute -right-24 -bottom-28 size-72 rotate-[13deg] border border-accent-yellow/18 sm:size-[27rem]" />
           <div className="clip-cut-sm absolute top-[62%] -left-[3%] hidden size-44 rotate-[-11deg] border border-border-subtle/45 lg:block" />
           <div className="clip-cut-sm absolute top-[78%] left-[7%] hidden size-24 rotate-[16deg] border border-accent-yellow/25 lg:block" />
-
           <div className="absolute top-28 left-0 h-px w-28 bg-linear-to-r from-accent-yellow/55 to-transparent sm:w-44" />
-          <div className="absolute right-0 bottom-36 h-px w-24 bg-linear-to-l from-accent-yellow/35 to-transparent sm:w-40" />
+
+          <span className="faq-qmark absolute top-6 -right-1 text-[10rem] opacity-80 sm:top-10 sm:right-[4%] sm:text-[15rem] lg:top-[18%] lg:right-[5%] lg:text-[24rem] lg:opacity-100 xl:right-[8%] xl:text-[28rem]">
+            ?
+          </span>
         </div>
 
         {/* Плавний перехід у сусідні розділи */}
@@ -209,7 +206,7 @@ export function FAQ() {
                     target={c.external ? '_blank' : undefined}
                     rel={c.external ? 'noopener noreferrer' : undefined}
                     className={cx(
-                      'clip-cut-sm inline-flex h-11 items-center gap-2 px-4 font-display text-sm font-bold uppercase transition-colors duration-200',
+                      'clip-cut-sm inline-flex h-11 items-center gap-2 px-4 font-ui text-[0.8rem] transition-colors duration-200',
                       i === 0
                         ? 'bg-accent-yellow text-bg-main hover:bg-accent-hot'
                         : 'border border-border-strong text-text-main hover:border-accent-yellow hover:text-accent-yellow',

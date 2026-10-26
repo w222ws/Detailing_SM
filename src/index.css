@@ -122,26 +122,6 @@
   }
 }
 
-/* =========================================================
-   ТРЕК ЛОГО ПАРТНЕРІВ — той самий прийом руху, що й Marquee
-   (translateX(-50%), безшовний цикл дублюванням вмісту), але:
-   рівний рядок без нахилу й без жирного тексту, темп спокійний
-   і статечний (це список сертифікацій, а не вітрина), і сам рух
-   ставиться на паузу, коли курсор заходить у смугу — на відміну
-   від Marquee, який ніколи не зупиняється.
-   ========================================================= */
-.partners-marquee-track {
-  animation: marquee 26s linear infinite;
-}
-.partners-marquee:hover .partners-marquee-track {
-  animation-play-state: paused;
-}
-@media (min-width: 640px) {
-  .partners-marquee-track {
-    animation-duration: 34s;
-  }
-}
-
 /* Хаотичне тремтіння окремого слова в стрічці — кожен елемент має свою
    тривалість/затримку (інлайн-стилем), тому рухаються не в унісон. */
 @keyframes marqueeWordJitter {
@@ -344,11 +324,6 @@
   video {
     display: block;
     max-width: 100%;
-  }
-
-  /* фото в галерее: пока грузится — не белая дыра */
-  img {
-    background-color: var(--color-bg-elevated);
   }
 
   button,
@@ -854,6 +829,20 @@
 /* =========================================================
    КНОПКИ
    ========================================================= */
+/* ШРИФТИ НА САЙТІ — два, а не три:
+   • Sofia Sans Extra Condensed (font-display) — лише ВЕЛИКІ заголовки.
+     Плакатний вузький шрифт: у 40–90px це характер, а в дрібному капсі
+     (кнопки, підписи) літери злипаються в кашу.
+   • Onest (font-sans) — текст І підписи кнопок капсом (font-ui нижче).
+   Хочеш інший шрифт кнопок — міняй font-family тут, у font-ui
+   та в btn-primary / btn-ghost. */
+@utility font-ui {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 @utility btn-primary {
   position: relative;
   display: inline-flex;
@@ -861,10 +850,10 @@
   justify-content: center;
   gap: 0.6rem;
   padding: 1rem 1.9rem;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-bg-main);
   background-color: var(--color-accent);
@@ -898,10 +887,10 @@
   justify-content: center;
   gap: 0.6rem;
   padding: 1rem 1.9rem;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-text-main);
   border: 1px solid var(--color-border-strong);
@@ -1007,6 +996,62 @@
 
   @media (min-width: 48rem) {
     display: none;
+  }
+}
+
+/* =========================================================
+   FAQ: ОБ'ЄМНИЙ ЗНАК ПИТАННЯ НА ФОНІ
+   Глибина — 22 шари text-shadow у em (світліший графіт біля лиця →
+   майже чорний ззаду), тому об'єм масштабується разом зі знаком.
+   Лице — темне з жовтим кантом (як ребро деталі під лампою).
+   Похитування — лише transform на власному шарі (will-change), тож
+   поки акордеон змінює висоту, знак не перемальовується.
+   ========================================================= */
+.faq-qmark {
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 0.8;
+  color: #171820;
+  -webkit-text-stroke: 0.006em rgb(255 245 0 / 0.55);
+  text-shadow:
+    0.0042em 0.0042em 0 rgb(42 44 56),
+    0.0084em 0.0084em 0 rgb(41 42 54),
+    0.0126em 0.0126em 0 rgb(39 41 52),
+    0.0168em 0.0168em 0 rgb(38 39 50),
+    0.021em 0.021em 0 rgb(36 38 48),
+    0.0252em 0.0252em 0 rgb(35 36 46),
+    0.0294em 0.0294em 0 rgb(33 35 45),
+    0.0336em 0.0336em 0 rgb(32 33 43),
+    0.0378em 0.0378em 0 rgb(30 32 41),
+    0.042em 0.042em 0 rgb(29 30 39),
+    0.0462em 0.0462em 0 rgb(27 29 37),
+    0.0504em 0.0504em 0 rgb(26 27 35),
+    0.0546em 0.0546em 0 rgb(24 26 33),
+    0.0588em 0.0588em 0 rgb(23 24 31),
+    0.063em 0.063em 0 rgb(21 23 29),
+    0.0672em 0.0672em 0 rgb(20 21 27),
+    0.0714em 0.0714em 0 rgb(18 20 26),
+    0.0756em 0.0756em 0 rgb(17 18 24),
+    0.0798em 0.0798em 0 rgb(15 17 22),
+    0.084em 0.084em 0 rgb(14 15 20),
+    0.0882em 0.0882em 0 rgb(12 14 18),
+    0.0924em 0.0924em 0 rgb(11 12 16),
+    0.16em 0.18em 0.22em rgb(0 0 0 / 0.75);
+  transform: perspective(1100px) rotateY(-24deg) rotateX(10deg) rotateZ(9deg);
+  animation: faqQmarkSway 9s ease-in-out infinite;
+  will-change: transform;
+  user-select: none;
+}
+
+@keyframes faqQmarkSway {
+  0%,
+  100% {
+    transform: perspective(1100px) rotateY(-24deg) rotateX(10deg) rotateZ(9deg)
+      translate3d(0, 0, 0);
+  }
+  50% {
+    transform: perspective(1100px) rotateY(-12deg) rotateX(5deg) rotateZ(5deg)
+      translate3d(0, -0.04em, 0);
   }
 }
 

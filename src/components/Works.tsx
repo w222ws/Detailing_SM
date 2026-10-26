@@ -260,7 +260,7 @@ function Compare({ before, after }: { before: string; after: string }) {
    в одне (geometry в index.css: hex-comb/hex-row/hex-cell). React лише
    рахує, скільки плиток у довгому ряду (телефон 2, планшет 3, десктоп 5)
    і розкладає фото по рядах; «хвіст» останнього ряду — порожня комірка-
-   контур (той самий HexOutline, що й фон розділу). Плитка — два clip-hex
+   контур (HexOutline). Плитка — два clip-hex
    шари (обідок-колір + фото з відступом 3px), на hover/focus обідок стає
    жовтим і фото трохи масштабується — дві дешеві transform/color
    властивості, без скла, градієнтів і нескінченних анімацій. */
@@ -491,7 +491,8 @@ export function Works() {
         id="works"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон — наші соти (bg-honeycomb) з м'яким переходом у сусідні розділи */}
+        {/* Фон — карбонова сітка (bg-honeycomb) з м'яким переходом у сусідні розділи.
+            Без окремих контурів-шестикутників зверху: сітка й так задає фактуру */}
         <div
           aria-hidden
           className="bg-honeycomb pointer-events-none absolute inset-0"
@@ -504,18 +505,6 @@ export function Works() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-bg-main via-bg-main/60 to-transparent"
         />
-
-        {/* Фон: контури сот під різними кутами — продовжують паттерн розділу */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 select-none"
-        >
-          <HexOutline className="absolute top-16 -left-10 size-56 rotate-[8deg] text-border-subtle/60 sm:size-72" />
-          <HexOutline className="absolute top-10 right-[8%] hidden size-40 -rotate-[12deg] text-accent-yellow/15 lg:block" />
-          <HexOutline className="absolute right-[-3rem] bottom-[18%] size-48 rotate-[18deg] text-border-subtle/40 sm:size-72" />
-          <HexOutline className="absolute bottom-6 left-[12%] hidden size-36 -rotate-[6deg] text-accent-yellow/10 lg:block" />
-          <HexOutline className="absolute top-[48%] left-[-4rem] hidden size-64 rotate-[22deg] text-border-subtle/30 lg:block" />
-        </div>
 
         <div className="container-site relative">
           <m.h2

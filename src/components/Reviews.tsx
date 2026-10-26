@@ -1,32 +1,26 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { domAnimation, LazyMotion, m } from 'motion/react';
-import { ArrowUpRightIcon, QuotesIcon, StarIcon } from '@phosphor-icons/react';
+import { GoogleLogoIcon, StarIcon } from '@phosphor-icons/react';
 import { reviews, type Review } from '../config/reviews';
-import { REVIEW_PATH, reviewPage } from '../config/review';
 import { locations } from '../config/locations';
 
 /* ==========================================================================
-   #reviews — стопка відгуків, яку гортаєш пальцем.
-   • Картка — clip-cut + border + bg-bg-elevated. Великий знак лапок у
-     кутку (декор), аватар-квадрат трохи «перекошений» на власний кут
-     (id → tilt) — стопка виглядає як купка реальних фотокарток, а не
-     однакові плитки. Рейтинг — класичні 5 зірок (заповнені/контурні).
-   • Над заголовком — чесний агрегат: середня оцінка + ті самі 5 зірок
-     + кількість відгуків з Google. Те, чого бракувало: людина бачить
-     підсумок одразу, а не вираховує його сама по картках.
-   • Жодних підказок «перетягни картку», жодного лічильника й кнопок
-     гортання під стопкою — сама стопка (глибина видно по картках ззаду),
-     свайп, тап і стрілки клавіатури вже покривають керування, зайва
-     панель під нею тільки дублювала те саме.
-   • CTA «Залишити відгук» — без стрілки, що крутиться; замість неї
-     жовта смужка зліва виростає при наведенні (той самий прийом, що в
-     картці послуги), і мітка «Google» — куди саме веде посилання.
-   Фон — соти (bg-honeycomb, як у Works/FAQ) + зрізані панелі
-   (clip-cut/clip-cut-sm) поверх — та сама мова, що й по всьому сайту.
-   Механіка стопки (fly/back/onDown/onMove/onUp) — як була: позиція під
-   час перетягування пишеться прямо в DOM, без React-стану, тому не
-   лагає. Вертикальний свайп не перехоплюється — сторінка скролиться як
-   завжди.
+   #reviews — «Відгуки клієнтів»: стопка карток, яку гортаєш пальцем.
+   • Свайп вліво/вправо — верхня картка відлітає й лягає в низ стопки;
+     тап по картці — те саме; на компі ще й стрілки клавіатури.
+     Що їх кілька — видно по картках віялом ззаду, без підказок текстом.
+   • Картка чиста: 5 зірок, текст, ім'я. Без аватарок-квадратиків,
+     без величезних лапок у кутку, без моно-плашок — саме це робило
+     розділ схожим на згенерований шаблон.
+   • Текст не обрізається: висоту стопці задає невидима копія найдовшого
+     відгуку, тож усі картки вміщують свій текст повністю.
+   • Механіка: позиція під час перетягування пишеться прямо в DOM, без
+     React-стану, тому не лагає. Вертикальний свайп не перехоплюється —
+     сторінка скролиться як завжди.
+   • Під заголовком — заклик залишити свій відгук: кнопка на кожну
+     студію, веде одразу на Google-форму.
+   Фон — соти, як просив клієнт.
+   Дані — з config/reviews.ts і config/locations.ts.
    ========================================================================== */
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -41,17 +35,6 @@ const reveal = (delay = 0) => ({
   transition: { duration: 0.7, delay, ease: EASE },
 });
 
-/* Чесний агрегат, порахований з тих самих даних, а не вигаданий */
-const avgRating =
-  reviews.reduce((sum, r) => sum + r.rating, 0) / Math.max(1, reviews.length);
-
-/* Стабільний «нахил» від id — аватари лежать не рівно, як фотокартки */
-const tilt = (id: string) => {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 9;
-  return (h - 4) * 1.1;
-};
-
 /* Як лежать картки у стопці: верхня рівно, нижні — віялом */
 const REST = [
   'translate3d(0,0,0) rotate(0deg)',
@@ -60,12 +43,24 @@ const REST = [
 ];
 const REST_HIDDEN = 'translate3d(0,28px,0) scale(0.91)';
 
-/* П'ять зірок, завжди п'ять — заповнені жовтим рівно по оцінці,
-   решта контуром. Той самий компонент і в картці, і в агрегаті
-   над заголовком, щоб обидва місця говорили однією мовою. */
+/* Найдовший відгук — задає висоту стопки */
+const LONGEST = reviews.reduce<Review | undefined>(
+  (a, r) => (!a || r.text.length > a.text.length ? r : a),
+  undefined,
+);
+
+/* «м. Дніпро, вул. Петра Бикова, 16» → «вул. Петра Бикова, 16»:
+   місто однакове в обох студій, на кнопці воно лише заважає */
+const street = (address: string) => {
+  const parts = address.split(', ');
+  return parts.length > 1 && /^м\.\s/.test(parts[0])
+    ? parts.slice(1).join(', ')
+    : address;
+};
+
 function StarRow({
   rating,
-  size = 'size-3.5',
+  size = 'size-4',
 }: {
   rating: number;
   size?: string;
@@ -78,7 +73,7 @@ function StarRow({
           weight={i < rating ? 'fill' : 'regular'}
           className={cx(
             size,
-            i < rating ? 'text-accent-yellow' : 'text-border-subtle/50',
+            i < rating ? 'text-accent-yellow' : 'text-border-strong',
           )}
         />
       ))}
@@ -86,53 +81,23 @@ function StarRow({
   );
 }
 
-/* -------------------- Картка відгуку -------------------- */
 function Card({ review }: { review: Review }) {
-  const initial = review.name.trim().charAt(0).toUpperCase() || '?';
-
   return (
-    <figure className="clip-cut relative flex h-full flex-col overflow-hidden border border-border-subtle bg-bg-elevated p-5 shadow-card sm:p-7">
-      {/* Декоративний великий знак лапок у кутку */}
-      <QuotesIcon
-        aria-hidden
-        weight="fill"
-        className="pointer-events-none absolute -top-4 -right-4 size-28 text-accent-yellow/10 sm:-top-6 sm:-right-6 sm:size-36"
-      />
-
-      <figcaption className="relative flex items-center gap-3.5">
-        <span
-          aria-hidden
-          style={{ transform: `rotate(${tilt(review.id)}deg)` }}
-          className="clip-cut-sm grid size-12 shrink-0 place-items-center bg-accent-yellow font-display text-lg font-black text-bg-main"
-        >
-          {initial}
-        </span>
-        <div className="min-w-0 flex-1">
-          <span className="block truncate font-display text-base font-bold text-text-main uppercase sm:text-lg">
-            {review.name}
-          </span>
-          <span
-            className="mt-1 block"
-            aria-label={`Оцінка ${review.rating} з 5`}
-          >
-            <StarRow rating={review.rating} />
-          </span>
-        </div>
-      </figcaption>
-
-      <span
-        aria-hidden
-        className="relative mt-5 block h-px w-full bg-linear-to-r from-accent-yellow/40 via-border-subtle to-transparent"
-      />
-
-      <blockquote className="relative mt-5 line-clamp-6 flex-1 text-sm leading-relaxed text-text-main select-none sm:text-base">
+    <figure className="clip-cut flex h-full flex-col border border-border-subtle bg-bg-elevated p-6 shadow-card sm:p-8">
+      <span aria-label={`Оцінка ${review.rating} з 5`}>
+        <StarRow rating={review.rating} />
+      </span>
+      <blockquote className="mt-5 flex-1 text-base leading-relaxed text-text-main select-none sm:text-lg">
         {review.text}
       </blockquote>
+      <figcaption className="mt-7 flex items-center gap-3">
+        <span aria-hidden className="h-0.5 w-6 bg-accent-yellow" />
+        <span className="font-ui text-sm text-text-muted">{review.name}</span>
+      </figcaption>
     </figure>
   );
 }
 
-/* -------------------- Секція -------------------- */
 export function Reviews() {
   const [order, setOrder] = useState(() => reviews.map((_, i) => i));
   const stack = useRef<HTMLDivElement>(null);
@@ -150,6 +115,7 @@ export function Reviews() {
   const topCard = () =>
     stack.current?.querySelector<HTMLElement>('[data-pos="0"]') ?? null;
 
+  /* Верхня картка відлітає вбік і лягає в низ стопки */
   const fly = (dir: 1 | -1) => {
     const card = topCard();
     if (!card || busy.current) return;
@@ -229,117 +195,66 @@ export function Reviews() {
         id="reviews"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон: соти (та сама текстура, що й у Works/FAQ) + зрізані панелі зверху */}
+        {/* Фон: соти + плавний перехід у сусідні розділи */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
         >
           <div className="bg-honeycomb absolute inset-0" />
-          <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-bg-main via-bg-main/40 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-bg-main via-bg-main/40 to-transparent" />
-
-          <div className="clip-cut absolute -top-12 -right-16 size-64 rotate-[9deg] border border-border-subtle/40 sm:size-96" />
-          <div className="clip-cut-sm absolute -bottom-10 -left-10 size-52 -rotate-[12deg] border border-accent-yellow/10 sm:size-72" />
-          <div className="clip-cut-sm absolute top-1/3 left-[6%] hidden size-36 rotate-[16deg] border border-border-subtle/25 lg:block" />
-          <div className="clip-cut absolute right-[10%] bottom-[10%] hidden size-28 -rotate-[20deg] border border-border-subtle/30 lg:block" />
-
-          {/* Тонкі жовті «пил-смуги» */}
+          <div className="absolute inset-x-0 top-0 h-28 bg-linear-to-b from-bg-main to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-bg-main to-transparent" />
           <div className="absolute top-16 left-0 h-px w-24 bg-linear-to-r from-accent-yellow/50 to-transparent sm:w-40" />
-          <div className="absolute right-0 bottom-32 h-px w-24 bg-linear-to-l from-accent-yellow/40 to-transparent sm:w-40" />
         </div>
 
-        <div className="container-site relative grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-          {/* ========== Ліва колонка: заголовок + CTA ========== */}
-          <div>
+        <div className="container-site relative grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:grid-rows-[auto_1fr] lg:gap-x-16 xl:gap-x-24">
+          {/* Заголовок */}
+          <div className="lg:col-start-1 lg:row-start-1">
             <m.h2
               {...reveal()}
               className="font-display text-4xl text-text-main uppercase sm:text-5xl lg:text-6xl"
             >
               Відгуки <span className="text-accent-yellow">клієнтів</span>
             </m.h2>
-
-            {/* Агрегат — те, чого бракувало: підсумок одразу, а не
-                вираховуй сам по картках. Порахований, не вигаданий. */}
-            <m.div {...reveal(0.06)} className="mt-4 flex items-center gap-3">
-              <span className="font-display text-3xl font-black text-accent-yellow sm:text-4xl">
-                {avgRating.toFixed(1)}
-              </span>
-              <StarRow rating={Math.round(avgRating)} size="size-4" />
-              <span className="font-mono text-xs text-text-dim uppercase tracking-wide">
-                {reviews.length} відгуків · Google
-              </span>
-            </m.div>
-
             <m.p
-              {...reveal(0.12)}
-              className="mt-3 max-w-sm text-sm text-text-muted sm:text-base"
+              {...reveal(0.06)}
+              className="mt-4 flex items-center gap-2.5 text-sm text-text-muted"
             >
-              Були в нас? Поділіться своїм відгуком — нижче.
+              <StarRow rating={5} />З нашої сторінки в Google
             </m.p>
-
-            <m.div {...reveal(0.15)} className="relative z-10 mt-8 lg:mt-10">
-              <p className="font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase sm:text-xs">
-                Залишити відгук
-              </p>
-              <div className="mt-4 flex flex-col gap-3">
-                {locations.map((loc) => (
-                  <a
-                    key={loc.id}
-                    href={loc.reviewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="clip-cut group relative flex items-center gap-4 overflow-hidden border border-border-subtle bg-bg-elevated p-4 shadow-card transition-colors duration-200 hover:border-accent-yellow/50 active:scale-[0.99] sm:p-5"
-                  >
-                    <span
-                      aria-hidden
-                      className="absolute inset-y-0 left-0 w-[3px] origin-top scale-y-0 bg-accent-yellow transition-transform duration-300 ease-out group-hover:scale-y-100"
-                    />
-                    <span className="min-w-0 flex-1 truncate font-display text-sm font-bold text-text-main uppercase sm:text-base">
-                      {loc.address}
-                    </span>
-                    <span className="shrink-0 font-mono text-[0.6rem] font-bold tracking-widest text-text-dim uppercase transition-colors duration-200 group-hover:text-accent-yellow">
-                      Google
-                    </span>
-                  </a>
-                ))}
-              </div>
-
-              {/* Мала ланка на окрему сторінку відгуків (/review, куди веде QR) */}
-              <a
-                href={REVIEW_PATH}
-                className="mt-4 inline-flex items-center gap-1.5 font-mono text-[0.65rem] font-bold tracking-widest text-text-dim uppercase transition-colors hover:text-accent-yellow"
-              >
-                {reviewPage.pageLinkLabel}
-                <ArrowUpRightIcon
-                  aria-hidden
-                  weight="bold"
-                  className="size-3.5"
-                />
-              </a>
-            </m.div>
           </div>
 
-          {/* ========== Права колонка: стопка карток ========== */}
-          <m.div {...reveal(0.1)}>
+          {/* Стопка карток */}
+          <m.div
+            {...reveal(0.1)}
+            className="self-center lg:col-start-2 lg:row-span-2 lg:row-start-1"
+          >
             <div
               ref={stack}
               role="group"
               aria-roledescription="стопка відгуків"
-              aria-label="Відгуки клієнтів. Свайпніть картку вліво або вправо"
+              aria-label="Відгуки клієнтів. Натисніть або свайпніть картку, щоб побачити наступний"
               tabIndex={0}
               onKeyDown={onKey}
               onPointerDown={onDown}
               onPointerMove={onMove}
               onPointerUp={onUp}
               onPointerCancel={onCancel}
-              className="relative mx-auto h-[26rem] w-full max-w-md cursor-grab select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-yellow active:cursor-grabbing sm:h-[28rem] lg:h-[30rem]"
+              className="relative mx-auto w-full max-w-xl cursor-grab select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-yellow active:cursor-grabbing"
             >
+              {/* Невидима копія найдовшого відгуку — задає висоту стопки */}
+              {LONGEST && (
+                <div aria-hidden className="invisible pb-8">
+                  <Card review={LONGEST} />
+                </div>
+              )}
+
               {order.map((cardIndex, pos) => (
                 <div
                   key={cardIndex}
                   data-pos={pos}
+                  aria-hidden={pos !== 0}
                   className={cx(
-                    'absolute inset-x-0 top-0 bottom-8 transition-transform duration-300 ease-out [touch-action:pan-y] will-change-transform',
+                    'absolute inset-x-0 top-0 bottom-8 transition-transform duration-300 ease-out will-change-transform [touch-action:pan-y]',
                     pos > 2 && 'pointer-events-none opacity-0',
                   )}
                   style={{
@@ -349,6 +264,48 @@ export function Reviews() {
                 >
                   <Card review={reviews[cardIndex]} />
                 </div>
+              ))}
+            </div>
+          </m.div>
+
+          {/* Залишити свій відгук */}
+          <m.div
+            {...reveal(0.16)}
+            className="lg:col-start-1 lg:row-start-2 lg:self-end"
+          >
+            <p className="font-display text-2xl font-black text-text-main uppercase sm:text-3xl">
+              Були в нас?
+            </p>
+            <p className="mt-2 text-sm text-text-muted sm:text-base">
+              Залиште відгук у Google — оберіть свою студію.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {locations.map((loc, i) => (
+                <a
+                  key={loc.id}
+                  href={loc.reviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cx(
+                    'clip-cut-sm inline-flex h-12 items-stretch font-ui text-[0.8rem] whitespace-nowrap transition-colors duration-200',
+                    i === 0
+                      ? 'bg-accent-yellow text-bg-main hover:bg-accent-hot'
+                      : 'border border-border-strong text-text-main hover:border-accent-yellow hover:text-accent-yellow',
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cx(
+                      'grid w-12 shrink-0 place-items-center border-r',
+                      i === 0 ? 'border-bg-main/15' : 'border-border-strong',
+                    )}
+                  >
+                    <GoogleLogoIcon weight="bold" className="size-[1.1rem]" />
+                  </span>
+                  <span className="flex flex-1 items-center px-4">
+                    {street(loc.address)}
+                  </span>
+                </a>
               ))}
             </div>
           </m.div>

@@ -160,7 +160,7 @@ function Carbon({ eyes, pupils, mouth }: CatRefs) {
         </g>
       </g>
 
-      {/* Ніс і рот. Рот міняється під час моргу — звідси referal */}
+      {/* Ніс і рот. Рот міняється під час моргу — звідси ref */}
       <path d="M149 137H166L157.5 147L149 137Z" fill="#07070a" />
       <path
         ref={mouth}
@@ -296,14 +296,6 @@ export function ReviewPage() {
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-bg-main via-bg-main/70 to-transparent"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-[55vh]"
-            style={{
-              background:
-                'radial-gradient(ellipse 55% 75% at 40% 0%, rgb(255 245 0 / 0.07), transparent 70%)',
-            }}
           />
 
           <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col px-6 pt-6 pb-10">

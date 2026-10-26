@@ -36,6 +36,12 @@ const certEntry = entries.find((e) => /cert|sert/i.test(e.name));
 /** Фото сертифікату (для лайтбоксу) — null, якщо файл не додано */
 export const certificate: string | null = certEntry?.url ?? null;
 
+/** Підпис під фото сертифікату — що саме на фото. Змінив фото — зміни й тут. */
+export const certificateInfo = {
+  title: 'Сертифікати майстра',
+  note: 'Акредитація Gtechniq та Ultimate Car Care',
+} as const;
+
 /** "ceramic-pro" → "Ceramic Pro" */
 const titleCase = (s: string) =>
   s.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
