@@ -1,82 +1,82 @@
 @import 'tailwindcss';
 
 /* =========================================================
-   DETAILING SV — "NIGHT GARAGE"
-   Графит, карбон, жёлтый как отблеск фары на чёрном лаке.
-   Sofia Sans Extra Condensed — плакатный дисплей,
-   Onest — текст, JetBrains Mono — технические метки.
+   DETAILING SM — «НІЧНИЙ ГАРАЖ»
+   Графіт і карбон, жовтий — як відблиск фари на чорному лаку.
 
-   ЦВЕТА ЛОГОТИПА: меняешь 4 строки в блоке ACCENT —
-   перекрашивается весь сайт.
+   Зміст файлу:
+   1. Токени (@theme) — кольори, шрифти, тіні, анімації
+   2. Keyframes
+   3. База — html, body, заголовки, виділення, фокус, скролбар
+   4. Розкладка
+   5. Фони (bg-grain, bg-honeycomb, bg-carbon)
+   6. Форми-силуети (зрізані кути, шестикутник)
+   7. Типографіка
+   8. Кнопки й посилання
+   9. Компоненти: акордеон FAQ, повзунок ДО/ПІСЛЯ, соти галереї,
+      марі-стрічка, об'ємний «?» у FAQ
+   10. Доступність (вимкнені анімації)
+
+   ШРИФТИ:
+   • Sofia Sans Extra Condensed (font-display) — великі заголовки
+     й головні кнопки (btn-primary / btn-ghost). Плакатний, вузький.
+     Увага: його рядкова кирилиця — болгарського накреслення
+     («т» як «m», «д» як «g»), тому ним пишемо ЛИШЕ КАПСОМ.
+   • Onest (font-sans) — текст, а ще дрібні кнопки й підписи капсом
+     (font-ui): у дрібному розмірі вузький плакатний шрифт злипається.
+   • JetBrains Mono (font-mono) — технічні мітки.
+   ========================================================= */
+
+/* =========================================================
+   1. ТОКЕНИ
    ========================================================= */
 @theme {
-  /* --- поверхности --- */
+  /* поверхні */
   --color-bg-main: #07070a;
   --color-bg-elevated: #0c0d11;
   --color-bg-card: #101117;
-  --color-bg-card-hover: #161821;
   --color-border-subtle: #1e202b;
   --color-border-strong: #343849;
 
-  /* --- ACCENT: взято с лого (чистий лимонний #FFFF01, не золотий) --- */
+  /* акцент — жовтий з лого. Міняєш тут — перефарбовується весь сайт */
   --color-accent: #fff500;
   --color-accent-hot: #ffff7a;
-  --color-accent-dark: #c7c000;
   --color-accent-soft: rgb(255 245 0 / 0.1);
-
-  /* алиасы, чтобы старая разметка не ломалась */
+  /* у розмітці акцент пишеться як accent-yellow (bg-accent-yellow тощо) */
   --color-accent-yellow: var(--color-accent);
-  --color-accent-yellow-dark: var(--color-accent-dark);
-  --color-accent-yellow-soft: var(--color-accent-soft);
 
-  --color-steel: #aab0c4;
-  --color-chrome: #d7dbe6;
-
-  /* --- текст --- */
+  /* текст */
   --color-text-main: #f4f5f8;
   --color-text-muted: #8a8fa3;
   --color-text-dim: #565a6e;
 
-  /* --- шрифты --- */
+  /* шрифти */
   --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Sofia Sans Extra Condensed', 'Onest', Impact, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 
-  /* --- геометрия: острые «кузовные» углы --- */
-  --radius-bento: 0.375rem;
+  /* геометрія: гострі «кузовні» кути */
   --radius-control: 0.25rem;
 
   --shadow-card:
     0 1px 0 0 rgb(255 255 255 / 0.05) inset, 0 30px 60px -30px rgb(0 0 0 / 0.9);
-  --shadow-glow:
-    0 0 0 1px rgb(255 245 0 / 0.5), 0 0 60px -10px rgb(255 245 0 / 0.45);
-  --shadow-lift: 0 24px 48px -24px rgb(0 0 0 / 0.85);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* --- анимации --- */
-  --animate-marquee: marquee 14s linear infinite;
-  --animate-marquee-fast: marqueeReverse 9s linear infinite;
+  /* анімації (animate-*). marquee-word підключається інлайн-стилем
+     у Marquee.tsx — не видаляти, хоч класу animate-marquee-word і нема */
   --animate-marquee-word: marqueeWordJitter 2.4s ease-in-out infinite;
-  --animate-smooth-drift: smoothDrift 9s ease-in-out infinite;
-  --animate-gradient: textGradient 6s linear infinite;
-  --animate-fade-up: fadeUp 0.8s var(--ease-out-expo) both;
   --animate-sweep: sweep 5s var(--ease-smooth) infinite;
-  --animate-pulse-ring: pulseRing 2.4s ease-out infinite;
-  --animate-scan: scan 7s linear infinite;
   --animate-call-ripple: callRipple 5s ease-out infinite;
   --animate-call-shake: callShake 5s ease-in-out infinite;
-  --animate-float: float 7s ease-in-out infinite;
-  --animate-hero-sway: heroSway 8s ease-in-out infinite;
-  --animate-blink: blink 1.6s steps(1, end) infinite;
-  --animate-rotate-slow: spin 22s linear infinite;
 }
 
 /* =========================================================
-   KEYFRAMES
+   2. KEYFRAMES
    ========================================================= */
+
+/* марі-стрічка: вміст подвоєний, тому зсув на -50% — безшовний цикл */
 @keyframes marquee {
   to {
     transform: translateX(-50%);
@@ -92,38 +92,8 @@
   }
 }
 
-/* =========================================================
-   МАРКІ-ТРЕК — швидкість, що відчувається однаково на будь-якому
-   екрані. На мобілці текст у ~4 рази дрібніший за десктопний, тому
-   за ту саму тривалість проїжджає набагато менший шлях і «на око»
-   здається повільним — компенсуємо коротшою тривалістю на малих
-   екранах замість єдиного фіксованого часу з --animate-marquee.
-   ========================================================= */
-.marquee-track {
-  animation: marquee 6s linear infinite;
-}
-.marquee-track-reverse {
-  animation: marqueeReverse 4.2s linear infinite;
-}
-@media (min-width: 640px) {
-  .marquee-track {
-    animation-duration: 9s;
-  }
-  .marquee-track-reverse {
-    animation-duration: 6s;
-  }
-}
-@media (min-width: 1024px) {
-  .marquee-track {
-    animation-duration: 13s;
-  }
-  .marquee-track-reverse {
-    animation-duration: 8.5s;
-  }
-}
-
-/* Хаотичне тремтіння окремого слова в стрічці — кожен елемент має свою
-   тривалість/затримку (інлайн-стилем), тому рухаються не в унісон. */
+/* тремтіння окремого слова в стрічці — тривалість і затримку кожне
+   слово отримує своє (інлайн-стилем), тому рухаються не в унісон */
 @keyframes marqueeWordJitter {
   0%,
   100% {
@@ -140,60 +110,7 @@
   }
 }
 
-@keyframes smoothDrift {
-  0%,
-  100% {
-    transform: perspective(1200px) rotateX(0deg) rotateY(0deg) scale(1);
-  }
-  33% {
-    transform: perspective(1200px) rotateX(3deg) rotateY(-4deg) scale(1.01);
-  }
-  66% {
-    transform: perspective(1200px) rotateX(-2deg) rotateY(3deg) scale(1);
-  }
-}
-
-@keyframes textGradient {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* гойдання фото херо: симетрично вліво-вправо, з 3D-нахилом.
-   Лише transform → іде на GPU-композиторі, без перемальовування. */
-@keyframes heroSway {
-  0%,
-  50%,
-  100% {
-    transform: perspective(900px) translate3d(0, 0, 0) rotateY(0deg)
-      rotateZ(0deg);
-  }
-  25% {
-    transform: perspective(900px) translate3d(0, -8px, 0) rotateY(8deg)
-      rotateZ(1.6deg);
-  }
-  75% {
-    transform: perspective(900px) translate3d(0, -8px, 0) rotateY(-8deg)
-      rotateZ(-1.6deg);
-  }
-}
-
-/* блик света, проходящий по лаку */
+/* блік, що пробігає по лаку (утиліта shine) */
 @keyframes sweep {
   0% {
     transform: translateX(-120%) skewX(-18deg);
@@ -204,25 +121,7 @@
   }
 }
 
-@keyframes pulseRing {
-  0% {
-    box-shadow: 0 0 0 0 rgb(255 245 0 / 0.55);
-  }
-  100% {
-    box-shadow: 0 0 0 18px rgb(255 245 0 / 0);
-  }
-}
-
-@keyframes scan {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
-}
-
-/* кнопка звонка: раз в ~5 сек кольца + «тряска» трубки */
+/* кнопка дзвінка в хедері: раз на ~5 с кільця + «тремтіння» трубки */
 @keyframes callRipple {
   0% {
     transform: scale(1);
@@ -261,29 +160,21 @@
   }
 }
 
-@keyframes float {
+/* похитування об'ємного «?» у FAQ */
+@keyframes faqQmarkSway {
   0%,
   100% {
-    transform: translateY(0);
+    transform: perspective(1100px) rotateY(-24deg) rotateX(10deg) rotateZ(9deg)
+      translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0.15;
+    transform: perspective(1100px) rotateY(-12deg) rotateX(5deg) rotateZ(5deg)
+      translate3d(0, -0.04em, 0);
   }
 }
 
 /* =========================================================
-   BASE
+   3. БАЗА
    ========================================================= */
 @layer base {
   html {
@@ -295,7 +186,33 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
-    scrollbar-width: none; /* смуга прокрутки прихована — без «лінії» збоку */
+
+    /* Скролбар — тонкий, ледь помітний, жовтий у тон сайту.
+       scrollbar-gutter: місце під смугу зарезервоване, тож коли
+       відкривається сертифікат на весь екран і прокрутка вимикається,
+       сторінка не «стрибає» вбік. */
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 245 0 / 0.28) transparent;
+    scrollbar-gutter: stable;
+  }
+
+  /* Safari й старі Chrome не знають scrollbar-color — для них те саме
+     через ::-webkit-scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(255 245 0 / 0.28);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(255 245 0 / 0.6);
   }
 
   body {
@@ -336,15 +253,6 @@
     cursor: pointer;
   }
 
-  summary {
-    cursor: pointer;
-    list-style: none;
-  }
-
-  summary::-webkit-details-marker {
-    display: none;
-  }
-
   ::selection {
     background-color: var(--color-accent);
     color: var(--color-bg-main);
@@ -357,7 +265,7 @@
 }
 
 /* =========================================================
-   LAYOUT
+   4. РОЗКЛАДКА
    ========================================================= */
 @utility container-site {
   width: 100%;
@@ -373,97 +281,282 @@
   }
 }
 
-@utility section-y {
-  padding-block: 5rem;
-
-  @media (min-width: 64rem) {
-    padding-block: 8rem;
-  }
-}
-
-/* отступ снизу под мобильную плашку звонка */
-@utility safe-bottom {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
-
-  @media (min-width: 48rem) {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-}
-
 /* =========================================================
-   ФОНЫ
+   5. ФОНИ
    ========================================================= */
+
+/* дрібна крапкова зернистість (тло всього сайту) */
 @utility bg-grain {
   background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 0);
   background-size: 22px 22px;
 }
 
-/* Соти — справжня шестикутна сітка: один SVG-тайл (contour, без растру
-   і base64, ~2.4КБ проти колишніх 75КБ) безшовно повторюється. Поверх —
-   3 статичні "лампи" (жовта/сталева), що підсвічують соти локально, як
-   прожектори в гаражі. Без анімацій — нуль лагів.
-   Увімкнути: className="bg-honeycomb". */
+/* карбон — плетінка, як на капоті (тло повзунка ДО/ПІСЛЯ) */
+@utility bg-carbon {
+  background-color: #0a0b0f;
+  background-image:
+    linear-gradient(27deg, #14151b 5px, transparent 5px),
+    linear-gradient(207deg, #14151b 5px, transparent 5px),
+    linear-gradient(27deg, #0e0f14 5px, transparent 5px),
+    linear-gradient(207deg, #0e0f14 5px, transparent 5px);
+  background-size: 20px 20px;
+  background-position:
+    0 5px,
+    10px 0,
+    0 10px,
+    10px 5px;
+}
+
+/* =========================================================
+   6. ФОРМИ-СИЛУЕТИ
+   ========================================================= */
+
+/* фірмовий зріз двох кутів — великий і малий */
+@utility clip-cut {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 1.25rem) 0,
+    100% 1.25rem,
+    100% 100%,
+    1.25rem 100%,
+    0 calc(100% - 1.25rem)
+  );
+}
+
+@utility clip-cut-sm {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 0.75rem) 0,
+    100% 0.75rem,
+    100% 100%,
+    0.75rem 100%,
+    0 calc(100% - 0.75rem)
+  );
+}
+
+/* Соти — технічна сітка-каркас: тонкі білі контури шестикутників, що
+   безшовно повторюються, плюс одна холодна сталева пляма на фоні (блик
+   світла по металу, без жовтої «лампи») і глибока віньєтка, що тягне
+   все до чорного по краях. Без анімацій, без warm-акцентів — щоб фон
+   лишався суворим і футуристичним, а жовтий колір був лише там, де
+   бренд (кнопки, акценти в контенті).
+   Увага: градієнти 100% 100% означають, що браузер перемальовує їх,
+   коли висота блока змінюється — тож у FAQ (акордеон) сот немає. */
 @utility bg-honeycomb {
   background-color: var(--color-bg-main);
   background-image:
     radial-gradient(
-      ellipse 34% 30% at 14% 10%,
-      rgb(255 245 0 / 0.1),
+      ellipse 40% 36% at 72% 32%,
+      rgb(180 186 206 / 0.07),
       transparent 70%
-    ),
-    radial-gradient(
-      ellipse 28% 26% at 86% 54%,
-      rgb(180 186 206 / 0.08),
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 44% 38% at 46% 108%,
-      rgb(255 245 0 / 0.07),
-      transparent 74%
     ),
     radial-gradient(
       ellipse 92% 82% at 50% 42%,
       transparent 0%,
-      rgb(7 7 10 / 0.5) 55%,
-      rgb(7 7 10 / 0.94) 100%
+      rgb(7 7 10 / 0.55) 55%,
+      rgb(7 7 10 / 0.96) 100%
     ),
-    url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20173.205%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22rgb%28255%20255%20255%20/%200.055%29%22%20stroke-width%3D%221.1%22%20vector-effect%3D%22non-scaling-stroke%22%3E%3Cpolygon%20points%3D%22-150.00%2C-86.60%20-100.00%2C-57.73%20-100.00%2C0.00%20-150.00%2C28.87%20-200.00%2C0.00%20-200.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%22-50.00%2C-86.60%20-0.00%2C-57.73%20-0.00%2C0.00%20-50.00%2C28.87%20-100.00%2C0.00%20-100.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%2250.00%2C-86.60%20100.00%2C-57.73%20100.00%2C0.00%2050.00%2C28.87%200.00%2C0.00%200.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%22150.00%2C-86.60%20200.00%2C-57.73%20200.00%2C0.00%20150.00%2C28.87%20100.00%2C0.00%20100.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%22-100.00%2C0.00%20-50.00%2C28.87%20-50.00%2C86.61%20-100.00%2C115.47%20-150.00%2C86.61%20-150.00%2C28.87%22/%3E%3Cpolygon%20points%3D%220.00%2C0.00%2050.00%2C28.87%2050.00%2C86.61%200.00%2C115.47%20-50.00%2C86.61%20-50.00%2C28.87%22/%3E%3Cpolygon%20points%3D%22100.00%2C0.00%20150.00%2C28.87%20150.00%2C86.61%20100.00%2C115.47%2050.00%2C86.61%2050.00%2C28.87%22/%3E%3Cpolygon%20points%3D%22200.00%2C0.00%20250.00%2C28.87%20250.00%2C86.61%20200.00%2C115.47%20150.00%2C86.61%20150.00%2C28.87%22/%3E%3Cpolygon%20points%3D%22-150.00%2C86.61%20-100.00%2C115.47%20-100.00%2C173.21%20-150.00%2C202.08%20-200.00%2C173.21%20-200.00%2C115.47%22/%3E%3Cpolygon%20points%3D%22-50.00%2C86.61%20-0.00%2C115.47%20-0.00%2C173.21%20-50.00%2C202.08%20-100.00%2C173.21%20-100.00%2C115.47%22/%3E%3Cpolygon%20points%3D%2250.00%2C86.61%20100.00%2C115.47%20100.00%2C173.21%2050.00%2C202.08%200.00%2C173.21%200.00%2C115.47%22/%3E%3Cpolygon%20points%3D%22150.00%2C86.61%20200.00%2C115.47%20200.00%2C173.21%20150.00%2C202.08%20100.00%2C173.21%20100.00%2C115.47%22/%3E%3Cpolygon%20points%3D%22-100.00%2C173.21%20-50.00%2C202.08%20-50.00%2C259.81%20-100.00%2C288.68%20-150.00%2C259.81%20-150.00%2C202.08%22/%3E%3Cpolygon%20points%3D%220.00%2C173.21%2050.00%2C202.08%2050.00%2C259.81%200.00%2C288.68%20-50.00%2C259.81%20-50.00%2C202.08%22/%3E%3Cpolygon%20points%3D%22100.00%2C173.21%20150.00%2C202.08%20150.00%2C259.81%20100.00%2C288.68%2050.00%2C259.81%2050.00%2C202.08%22/%3E%3Cpolygon%20points%3D%22200.00%2C173.21%20250.00%2C202.08%20250.00%2C259.81%20200.00%2C288.68%20150.00%2C259.81%20150.00%2C202.08%22/%3E%3C/g%3E%3C/svg%3E');
+    url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20173.205%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22rgb%28255%20255%20255%20/%200.07%29%22%20stroke-width%3D%221.1%22%20vector-effect%3D%22non-scaling-stroke%22%3E%3Cpolygon%20points%3D%22-150.00%2C-86.60%20-100.00%2C-57.73%20-100.00%2C0.00%20-150.00%2C28.87%20-200.00%2C0.00%20-200.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%22-50.00%2C-86.60%20-0.00%2C-57.73%20-0.00%2C0.00%20-50.00%2C28.87%20-100.00%2C0.00%20-100.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%2250.00%2C-86.60%20100.00%2C-57.73%20100.00%2C0.00%2050.00%2C28.87%200.00%2C0.00%200.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%22150.00%2C-86.60%20200.00%2C-57.73%20200.00%2C0.00%20150.00%2C28.87%20100.00%2C0.00%20100.00%2C-57.73%22/%3E%3Cpolygon%20points%3D%22-100.00%2C0.00%20-50.00%2C28.87%20-50.00%2C86.61%20-100.00%2C115.47%20-150.00%2C86.61%20-150.00%2C28.87%22/%3E%3Cpolygon%20points%3D%220.00%2C0.00%2050.00%2C28.87%2050.00%2C86.61%200.00%2C115.47%20-50.00%2C86.61%20-50.00%2C28.87%22/%3E%3Cpolygon%20points%3D%22100.00%2C0.00%20150.00%2C28.87%20150.00%2C86.61%20100.00%2C115.47%2050.00%2C86.61%2050.00%2C28.87%22/%3E%3Cpolygon%20points%3D%22200.00%2C0.00%20250.00%2C28.87%20250.00%2C86.61%20200.00%2C115.47%20150.00%2C86.61%20150.00%2C28.87%22/%3E%3Cpolygon%20points%3D%22-150.00%2C86.61%20-100.00%2C115.47%20-100.00%2C173.21%20-150.00%2C202.08%20-200.00%2C173.21%20-200.00%2C115.47%22/%3E%3Cpolygon%20points%3D%22-50.00%2C86.61%20-0.00%2C115.47%20-0.00%2C173.21%20-50.00%2C202.08%20-100.00%2C173.21%20-100.00%2C115.47%22/%3E%3Cpolygon%20points%3D%2250.00%2C86.61%20100.00%2C115.47%20100.00%2C173.21%2050.00%2C202.08%200.00%2C173.21%200.00%2C115.47%22/%3E%3Cpolygon%20points%3D%22150.00%2C86.61%20200.00%2C115.47%20200.00%2C173.21%20150.00%2C202.08%20100.00%2C173.21%20100.00%2C115.47%22/%3E%3Cpolygon%20points%3D%22-100.00%2C173.21%20-50.00%2C202.08%20-50.00%2C259.81%20-100.00%2C288.68%20-150.00%2C259.81%20-150.00%2C202.08%22/%3E%3Cpolygon%20points%3D%220.00%2C173.21%2050.00%2C202.08%2050.00%2C259.81%200.00%2C288.68%20-50.00%2C259.81%20-50.00%2C202.08%22/%3E%3Cpolygon%20points%3D%22100.00%2C173.21%20150.00%2C202.08%20150.00%2C259.81%20100.00%2C288.68%2050.00%2C259.81%2050.00%2C202.08%22/%3E%3Cpolygon%20points%3D%22200.00%2C173.21%20250.00%2C202.08%20250.00%2C259.81%20200.00%2C288.68%20150.00%2C259.81%20150.00%2C202.08%22/%3E%3C/g%3E%3C/svg%3E');
   background-size:
-    100% 100%,
-    100% 100%,
     100% 100%,
     100% 100%,
     138px 239px;
   background-position:
     0 0,
-    0 0,
-    0 0,
     center,
     center top;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+  background-repeat: no-repeat, no-repeat, repeat;
 
   @media (min-width: 1024px) {
     background-size:
-      100% 100%,
-      100% 100%,
       100% 100%,
       100% 100%,
       160px 277px;
   }
 }
 
-/* Шестикутник-бейдж — спільний для Process (HexTile), FAQ (HexAvatar)
-   і галереї робіт (Honeycomb) */
+/* шестикутник: плитки «Процесу», соти галереї, бейдж студії */
 @utility clip-hex {
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
 
 /* =========================================================
-   СОТИ ГАЛЕРЕЇ — справжня стільникова кладка, тільки геометрія:
-   жодного скла, градієнтів чи анімацій — лише flex-розмітка рядів
-   (--n ставить React, --w рахує сама CSS) і статичний колір обідка
-   (transition лише background-color — дешево, без лагів).
+   7. ТИПОГРАФІКА
    ========================================================= */
+
+/* дрібні кнопки й підписи капсом — Onest, читається в будь-якому розмірі */
+@utility font-ui {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* контурний текст (друга лінія марі-стрічки) */
+@utility text-stroke-neon {
+  -webkit-text-stroke: 1px var(--color-border-strong);
+  color: transparent;
+}
+
+/* величезний контурний номер на фоні (Hero, «Процес») */
+@utility section-index {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(7rem, 22vw, 18rem);
+  line-height: 0.75;
+  -webkit-text-stroke: 1px var(--color-border-subtle);
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* =========================================================
+   8. КНОПКИ Й ПОСИЛАННЯ
+   ========================================================= */
+@utility btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem 1.9rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-bg-main);
+  background-color: var(--color-accent);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 0.75rem) 0,
+    100% 0.75rem,
+    100% 100%,
+    0.75rem 100%,
+    0 calc(100% - 0.75rem)
+  );
+  transition:
+    background-color 0.3s var(--ease-smooth),
+    transform 0.3s var(--ease-out-expo),
+    filter 0.3s var(--ease-smooth);
+
+  &:hover {
+    background-color: var(--color-accent-hot);
+    transform: translateY(-2px);
+    filter: drop-shadow(0 10px 24px rgb(255 245 0 / 0.35));
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+@utility btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem 1.9rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-strong);
+  transition:
+    border-color 0.3s var(--ease-smooth),
+    color 0.3s var(--ease-smooth),
+    background-color 0.3s var(--ease-smooth);
+
+  &:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background-color: var(--color-accent-soft);
+  }
+}
+
+/* блік по лаку, що раз на 5 с пробігає кнопкою (головна кнопка Hero) */
+@utility shine {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.16),
+      transparent
+    );
+    animation: var(--animate-sweep);
+  }
+}
+
+/* підкреслення пунктів меню, що росте від лівого краю */
+@utility link-underline {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -0.35rem;
+    height: 1px;
+    width: 100%;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s var(--ease-out-expo);
+  }
+
+  &:hover::after,
+  &[data-active='true']::after {
+    transform: scaleX(1);
+  }
+}
+
+/* =========================================================
+   9. КОМПОНЕНТИ
+   ========================================================= */
+
+/* --- Акордеон FAQ: плавна висота без JS-вимірів --- */
+@utility accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s var(--ease-out-expo);
+
+  & > * {
+    overflow: hidden;
+  }
+}
+
+@utility accordion-open {
+  grid-template-rows: 1fr;
+}
+
+/* --- Повзунок ДО/ПІСЛЯ: рух лише через transform (--pos: 0–100%) --- */
+@utility cmp-window {
+  will-change: transform;
+  transform: translate3d(calc(var(--pos) - 100%), 0, 0);
+}
+
+@utility cmp-window-img {
+  will-change: transform;
+  transform: translate3d(calc(100% - var(--pos)), 0, 0);
+}
+
+@utility cmp-line {
+  will-change: transform;
+  transform: translate3d(var(--pos), 0, 0);
+}
+
+/* --- Соти галереї: справжня стільникова кладка, лише геометрія.
+       --n (плиток у ряду) ставить React, --w (ширину плитки) рахує CSS --- */
 @utility hex-comb {
   container-type: inline-size;
   --g: 6px;
@@ -504,509 +597,43 @@
   }
 }
 
-/* =========================================================
-   ПОВЗУНОК ДО/ПІСЛЯ — рух лише через transform (--pos: 0–100%)
-   ========================================================= */
-@utility cmp-window {
-  will-change: transform;
-  transform: translate3d(calc(var(--pos) - 100%), 0, 0);
+/* --- Марі-стрічка під Hero. Базова швидкість тут; під час скролу
+       Marquee.tsx розганяє її (playbackRate) і розвертає за напрямком
+       прокрутки. На телефоні текст у ~4 рази дрібніший, тож за той самий
+       час проїжджає менший шлях — тому на малих екранах тривалість
+       коротша --- */
+.marquee-track {
+  animation: marquee 4.5s linear infinite;
 }
 
-@utility cmp-window-img {
-  will-change: transform;
-  transform: translate3d(calc(100% - var(--pos)), 0, 0);
+.marquee-track-reverse {
+  animation: marqueeReverse 3.4s linear infinite;
 }
 
-@utility cmp-line {
-  will-change: transform;
-  transform: translate3d(var(--pos), 0, 0);
-}
-
-/* карбон — плетёнка как на капоте */
-@utility bg-carbon {
-  background-color: #0a0b0f;
-  background-image:
-    linear-gradient(27deg, #14151b 5px, transparent 5px),
-    linear-gradient(207deg, #14151b 5px, transparent 5px),
-    linear-gradient(27deg, #0e0f14 5px, transparent 5px),
-    linear-gradient(207deg, #0e0f14 5px, transparent 5px);
-  background-size: 20px 20px;
-  background-position:
-    0 5px,
-    10px 0,
-    0 10px,
-    10px 5px;
-}
-
-/* сетка чертежа */
-@utility bg-blueprint {
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
-}
-
-/* протектор шины — диагональная насечка, хорош для узких полос */
-@utility bg-tread {
-  background-image: repeating-linear-gradient(
-    115deg,
-    rgb(255 255 255 / 0.05) 0 2px,
-    transparent 2px 10px
-  );
-}
-
-/* жёлтое свечение «фары» из угла */
-@utility bg-headlight {
-  background-image:
-    radial-gradient(60% 50% at 85% 0%, rgb(255 245 0 / 0.16), transparent 70%),
-    radial-gradient(40% 40% at 10% 100%, rgb(255 245 0 / 0.06), transparent 70%);
-}
-
-/* мягкое затухание секции в чёрный сверху и снизу */
-@utility bg-fade-y {
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    #000 12%,
-    #000 88%,
-    transparent
-  );
-}
-
-@utility bg-size-200 {
-  background-size: 200% auto;
-}
-
-/* =========================================================
-   ТИПОГРАФИКА
-   ========================================================= */
-@utility text-stroke-neon {
-  -webkit-text-stroke: 1px var(--color-border-strong);
-  color: transparent;
-}
-
-@utility text-stroke-accent {
-  -webkit-text-stroke: 1.5px var(--color-accent);
-  color: transparent;
-}
-
-@utility text-gradient-accent {
-  background-image: linear-gradient(
-    100deg,
-    var(--color-accent) 0%,
-    #fffbb0 35%,
-    var(--color-accent-dark) 70%,
-    var(--color-accent) 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
-/* хромированный текст — для цифр статистики */
-@utility text-chrome {
-  background-image: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    var(--color-chrome) 45%,
-    #6e7488 55%,
-    #ffffff 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
-/* техническая метка: ——— 01 / ПОСЛУГИ */
-@utility eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-
-  &::before {
-    content: '';
-    width: 2rem;
-    height: 1px;
-    background: currentColor;
+@media (min-width: 640px) {
+  .marquee-track {
+    animation-duration: 7s;
+  }
+  .marquee-track-reverse {
+    animation-duration: 5s;
   }
 }
 
-/* огромный полупрозрачный номер секции на фоне */
-@utility section-index {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(7rem, 22vw, 18rem);
-  line-height: 0.75;
-  -webkit-text-stroke: 1px var(--color-border-subtle);
-  color: transparent;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* моношная подпись-метка: VIN, артикул, «гарантія 5 років» */
-@utility tag-mono {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border-subtle);
-  padding: 0.3rem 0.6rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* =========================================================
-   ФОРМЫ / СИЛУЭТЫ
-   ========================================================= */
-@utility clip-cut {
-  clip-path: polygon(
-    0 0,
-    calc(100% - 1.25rem) 0,
-    100% 1.25rem,
-    100% 100%,
-    1.25rem 100%,
-    0 calc(100% - 1.25rem)
-  );
-}
-
-@utility clip-cut-sm {
-  clip-path: polygon(
-    0 0,
-    calc(100% - 0.75rem) 0,
-    100% 0.75rem,
-    100% 100%,
-    0.75rem 100%,
-    0 calc(100% - 0.75rem)
-  );
-}
-
-/* срез только сверху справа — для карточек прайса */
-@utility clip-corner {
-  clip-path: polygon(
-    0 0,
-    calc(100% - 1.5rem) 0,
-    100% 1.5rem,
-    100% 100%,
-    0 100%
-  );
-}
-
-@utility hairline {
-  border: 1px solid var(--color-border-subtle);
-}
-
-/* тонкая «хромовая» линия-разделитель */
-@utility rule-chrome {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-border-strong) 20%,
-    var(--color-accent) 50%,
-    var(--color-border-strong) 80%,
-    transparent
-  );
-}
-
-/* =========================================================
-   ПОВЕРХНОСТИ
-   ========================================================= */
-@utility glass {
-  background-color: rgb(7 7 10 / 0.7);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
-  border: 1px solid var(--color-border-subtle);
-}
-
-/* Карточка с «прожектором» за курсором.
-   В JS на mousemove задавать --mx / --my (px) на элементе. */
-@utility card-bento {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-bento);
-  box-shadow: var(--shadow-card);
-  transition:
-    border-color 0.4s var(--ease-smooth),
-    transform 0.5s var(--ease-out-expo);
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.4s var(--ease-smooth);
-    background: radial-gradient(
-      380px circle at var(--mx, 50%) var(--my, 0%),
-      rgb(255 245 0 / 0.12),
-      transparent 60%
-    );
+@media (min-width: 1024px) {
+  .marquee-track {
+    animation-duration: 10s;
   }
-
-  &:hover {
-    border-color: rgb(255 245 0 / 0.45);
-    transform: translateY(-3px);
-  }
-
-  &:hover::before {
-    opacity: 1;
+  .marquee-track-reverse {
+    animation-duration: 7s;
   }
 }
 
-/* выделенная карточка (рекомендованный пакет) */
-@utility card-featured {
-  border-color: rgb(255 245 0 / 0.55);
-  box-shadow: var(--shadow-glow);
-}
-
-/* блик по лаку: родитель relative + overflow-hidden */
-@utility shine {
-  position: relative;
-  overflow: hidden;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 40%;
-    pointer-events: none;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgb(255 255 255 / 0.16),
-      transparent
-    );
-    animation: var(--animate-sweep);
-  }
-}
-
-/* стеклянный глянец сверху — «свежий слой керамики» */
-@utility lacquer {
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      160deg,
-      rgb(255 255 255 / 0.1) 0%,
-      transparent 35%
-    );
-  }
-}
-
-/* затемнение низа фото под подпись */
-@utility media-veil {
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 55%;
-    pointer-events: none;
-    background: linear-gradient(to top, rgb(7 7 10 / 0.92), transparent);
-  }
-}
-
-/* =========================================================
-   КНОПКИ
-   ========================================================= */
-/* ШРИФТИ НА САЙТІ — два, а не три:
-   • Sofia Sans Extra Condensed (font-display) — лише ВЕЛИКІ заголовки.
-     Плакатний вузький шрифт: у 40–90px це характер, а в дрібному капсі
-     (кнопки, підписи) літери злипаються в кашу.
-   • Onest (font-sans) — текст І підписи кнопок капсом (font-ui нижче).
-   Хочеш інший шрифт кнопок — міняй font-family тут, у font-ui
-   та в btn-primary / btn-ghost. */
-@utility font-ui {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-@utility btn-primary {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 1rem 1.9rem;
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-bg-main);
-  background-color: var(--color-accent);
-  clip-path: polygon(
-    0 0,
-    calc(100% - 0.75rem) 0,
-    100% 0.75rem,
-    100% 100%,
-    0.75rem 100%,
-    0 calc(100% - 0.75rem)
-  );
-  transition:
-    background-color 0.3s var(--ease-smooth),
-    transform 0.3s var(--ease-out-expo),
-    filter 0.3s var(--ease-smooth);
-
-  &:hover {
-    background-color: var(--color-accent-hot);
-    transform: translateY(-2px);
-    filter: drop-shadow(0 10px 24px rgb(255 245 0 / 0.35));
-  }
-
-  &:active {
-    transform: translateY(0) scale(0.98);
-  }
-}
-
-@utility btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 1rem 1.9rem;
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-text-main);
-  border: 1px solid var(--color-border-strong);
-  transition:
-    border-color 0.3s var(--ease-smooth),
-    color 0.3s var(--ease-smooth),
-    background-color 0.3s var(--ease-smooth);
-
-  &:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-    background-color: var(--color-accent-soft);
-  }
-}
-
-/* круглая иконка-кнопка: мессенджеры в хедере и футере */
-@utility btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-control);
-  transition:
-    color 0.25s var(--ease-smooth),
-    border-color 0.25s var(--ease-smooth),
-    background-color 0.25s var(--ease-smooth),
-    transform 0.25s var(--ease-spring);
-
-  &:hover {
-    color: var(--color-bg-main);
-    background-color: var(--color-accent);
-    border-color: var(--color-accent);
-    transform: translateY(-2px);
-  }
-}
-
-/* подчёркивание ссылок в меню, растущее от левого края */
-@utility link-underline {
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -0.35rem;
-    height: 1px;
-    width: 100%;
-    background: var(--color-accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.4s var(--ease-out-expo);
-  }
-
-  &:hover::after,
-  &[data-active='true']::after {
-    transform: scaleX(1);
-  }
-}
-
-/* пульсирующая точка «працюємо / приймаємо» */
-@utility dot-live {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 9999px;
-  background-color: var(--color-accent);
-  animation: var(--animate-pulse-ring);
-}
-
-/* =========================================================
-   АККОРДЕОН (FAQ) — плавная высота без JS-измерений
-   ========================================================= */
-@utility accordion-panel {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.45s var(--ease-out-expo);
-
-  & > * {
-    overflow: hidden;
-  }
-}
-
-@utility accordion-open {
-  grid-template-rows: 1fr;
-}
-
-/* =========================================================
-   МОБИЛЬНАЯ ПЛАШКА ЗВОНКА
-   ========================================================= */
-@utility bar-sticky {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 50;
-  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  background-color: rgb(7 7 10 / 0.85);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid var(--color-border-subtle);
-
-  @media (min-width: 48rem) {
-    display: none;
-  }
-}
-
-/* =========================================================
-   FAQ: ОБ'ЄМНИЙ ЗНАК ПИТАННЯ НА ФОНІ
-   Глибина — 22 шари text-shadow у em (світліший графіт біля лиця →
-   майже чорний ззаду), тому об'єм масштабується разом зі знаком.
-   Лице — темне з жовтим кантом (як ребро деталі під лампою).
-   Похитування — лише transform на власному шарі (will-change), тож
-   поки акордеон змінює висоту, знак не перемальовується.
-   ========================================================= */
+/* --- Об'ємний «?» на фоні FAQ.
+       Глибина — 22 шари text-shadow в em (світліший графіт біля лиця →
+       майже чорний ззаду), тож об'єм масштабується разом зі знаком.
+       Лице темне з жовтим кантом, як ребро деталі під лампою.
+       Похитування — лише transform на власному шарі (will-change), тому
+       поки акордеон змінює висоту, знак не перемальовується --- */
 .faq-qmark {
   font-family: var(--font-display);
   font-weight: 900;
@@ -1043,36 +670,8 @@
   user-select: none;
 }
 
-@keyframes faqQmarkSway {
-  0%,
-  100% {
-    transform: perspective(1100px) rotateY(-24deg) rotateX(10deg) rotateZ(9deg)
-      translate3d(0, 0, 0);
-  }
-  50% {
-    transform: perspective(1100px) rotateY(-12deg) rotateX(5deg) rotateZ(5deg)
-      translate3d(0, -0.04em, 0);
-  }
-}
-
 /* =========================================================
-   SCROLLBAR
-   ========================================================= */
-::-webkit-scrollbar {
-  display: none;
-}
-
-/* горизонтальные ленты галереи — скрываем полосу */
-@utility no-scrollbar {
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* =========================================================
-   ACCESSIBILITY
+   10. ДОСТУПНІСТЬ — якщо в системі вимкнено анімації
    ========================================================= */
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -1085,5 +684,14 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  /* Марі-стрічка — візитівка сайту: не зупиняємо, а ведемо повільно
+     й без тремтіння слів. Інакше в кого в Windows вимкнені «ефекти
+     анімації», стрічка просто стоїть і виглядає зламаною. */
+  .marquee-track,
+  .marquee-track-reverse {
+    animation-duration: 40s !important;
+    animation-iteration-count: infinite !important;
   }
 }

@@ -1,6 +1,6 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { domAnimation, LazyMotion, m } from 'motion/react';
-import { GoogleLogoIcon, StarIcon } from '@phosphor-icons/react';
+import { StarIcon } from '@phosphor-icons/react';
 import { reviews, type Review } from '../config/reviews';
 import { locations } from '../config/locations';
 
@@ -9,9 +9,15 @@ import { locations } from '../config/locations';
    • Свайп вліво/вправо — верхня картка відлітає й лягає в низ стопки;
      тап по картці — те саме; на компі ще й стрілки клавіатури.
      Що їх кілька — видно по картках віялом ззаду, без підказок текстом.
-   • Картка чиста: 5 зірок, текст, ім'я. Без аватарок-квадратиків,
-     без величезних лапок у кутку, без моно-плашок — саме це робило
-     розділ схожим на згенерований шаблон.
+   • Картка темна, строга: 5 зірок, текст, ім'я окремим рядком. Без лапок,
+     без аватарок, без іконок, без жовтих ліній у підписі — все, що
+     робило розділ схожим на шаблон, прибрано.
+   • Шрифт імені — той самий Sofia Sans Extra Condensed, що й у заголовках
+     секцій (а не моношрифт-метка): це не підпис-штамп, це людина, яка
+     лишила відгук.
+   • Під стопкою на компі — темна «плита» під усю ширину карток, яка не
+     підсвічує стопку, а гасить тло навколо: соти залишаються, але не
+     грають під карткою. Легше читається текст, акуратніше межа розділу.
    • Текст не обрізається: висоту стопці задає невидима копія найдовшого
      відгуку, тож усі картки вміщують свій текст повністю.
    • Механіка: позиція під час перетягування пишеться прямо в DOM, без
@@ -19,13 +25,13 @@ import { locations } from '../config/locations';
      сторінка скролиться як завжди.
    • Під заголовком — заклик залишити свій відгук: кнопка на кожну
      студію, веде одразу на Google-форму.
-   Фон — соти, як просив клієнт.
+   Фон — технічна сітка-каркас (bg-honeycomb), як просив клієнт.
    Дані — з config/reviews.ts і config/locations.ts.
    ========================================================================== */
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-const cx = (...parts: Array<string | false | undefined>) =>
+const cx = (...parts: Array<string | false | null | undefined>) =>
   parts.filter(Boolean).join(' ');
 
 const reveal = (delay = 0) => ({
@@ -83,16 +89,15 @@ function StarRow({
 
 function Card({ review }: { review: Review }) {
   return (
-    <figure className="clip-cut flex h-full flex-col border border-border-subtle bg-bg-elevated p-6 shadow-card sm:p-8">
+    <figure className="clip-cut flex h-full flex-col border border-border-subtle bg-bg-card p-6 shadow-card sm:p-8">
       <span aria-label={`Оцінка ${review.rating} з 5`}>
         <StarRow rating={review.rating} />
       </span>
       <blockquote className="mt-5 flex-1 text-base leading-relaxed text-text-main select-none sm:text-lg">
         {review.text}
       </blockquote>
-      <figcaption className="mt-7 flex items-center gap-3">
-        <span aria-hidden className="h-0.5 w-6 bg-accent-yellow" />
-        <span className="font-ui text-sm text-text-muted">{review.name}</span>
+      <figcaption className="mt-7 border-t border-border-subtle pt-4 font-display text-base font-bold tracking-wide text-text-main uppercase sm:text-lg">
+        {review.name}
       </figcaption>
     </figure>
   );
@@ -195,7 +200,8 @@ export function Reviews() {
         id="reviews"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон: соти + плавний перехід у сусідні розділи */}
+        {/* Фон: технічна сітка-каркас (bg-honeycomb) + плавний перехід
+            у сусідні розділи */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
@@ -203,7 +209,6 @@ export function Reviews() {
           <div className="bg-honeycomb absolute inset-0" />
           <div className="absolute inset-x-0 top-0 h-28 bg-linear-to-b from-bg-main to-transparent" />
           <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-bg-main to-transparent" />
-          <div className="absolute top-16 left-0 h-px w-24 bg-linear-to-r from-accent-yellow/50 to-transparent sm:w-40" />
         </div>
 
         <div className="container-site relative grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:grid-rows-[auto_1fr] lg:gap-x-16 xl:gap-x-24">
@@ -217,17 +222,22 @@ export function Reviews() {
             </m.h2>
             <m.p
               {...reveal(0.06)}
-              className="mt-4 flex items-center gap-2.5 text-sm text-text-muted"
+              className="mt-4 max-w-sm text-sm text-text-muted sm:text-base"
             >
-              <StarRow rating={5} />З нашої сторінки в Google
+              Що пишуть власники авто, яким ми робили роботу — на нашій сторінці
+              в Google.
             </m.p>
           </div>
 
-          {/* Стопка карток */}
+          {/* Стопка карток + темна «плита» під неї (гасить соти, не підсвічує) */}
           <m.div
             {...reveal(0.1)}
-            className="self-center lg:col-start-2 lg:row-span-2 lg:row-start-1"
+            className="relative self-center lg:col-start-2 lg:row-span-2 lg:row-start-1"
           >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -inset-x-6 -inset-y-10 -z-10 hidden bg-[radial-gradient(ellipse_72%_60%_at_50%_50%,rgb(7_7_10/0.95),rgb(7_7_10/0.6)_55%,transparent_80%)] lg:block"
+            />
             <div
               ref={stack}
               role="group"
@@ -287,24 +297,13 @@ export function Reviews() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={cx(
-                    'clip-cut-sm inline-flex h-12 items-stretch font-ui text-[0.8rem] whitespace-nowrap transition-colors duration-200',
+                    'clip-cut-sm inline-flex h-12 items-center justify-center px-6 font-display text-base font-bold whitespace-nowrap uppercase transition-colors duration-200',
                     i === 0
                       ? 'bg-accent-yellow text-bg-main hover:bg-accent-hot'
                       : 'border border-border-strong text-text-main hover:border-accent-yellow hover:text-accent-yellow',
                   )}
                 >
-                  <span
-                    aria-hidden
-                    className={cx(
-                      'grid w-12 shrink-0 place-items-center border-r',
-                      i === 0 ? 'border-bg-main/15' : 'border-border-strong',
-                    )}
-                  >
-                    <GoogleLogoIcon weight="bold" className="size-[1.1rem]" />
-                  </span>
-                  <span className="flex flex-1 items-center px-4">
-                    {street(loc.address)}
-                  </span>
+                  {street(loc.address)}
                 </a>
               ))}
             </div>

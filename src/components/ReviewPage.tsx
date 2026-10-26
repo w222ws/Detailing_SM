@@ -284,7 +284,7 @@ export function ReviewPage() {
   return (
     <LazyMotion features={domAnimation} strict>
       <MotionConfig reducedMotion="user">
-        <main className="relative flex min-h-dvh flex-col overflow-hidden bg-bg-main bg-grain">
+        <main className="relative flex min-h-dvh flex-col overflow-hidden bg-bg-main">
           <div
             aria-hidden
             className="bg-honeycomb pointer-events-none absolute inset-0"

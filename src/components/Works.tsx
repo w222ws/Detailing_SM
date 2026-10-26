@@ -220,9 +220,9 @@ function Compare({ before, after }: { before: string; after: string }) {
         />
       ))}
 
-      {/* Лінія + шильдик */}
+      {/* Лінія + шильдик — графітові, щоб не перебивати саме фото */}
       <div className="cmp-line pointer-events-none absolute inset-0">
-        <div className="absolute inset-y-0 left-0 w-px -translate-x-1/2 bg-accent-yellow">
+        <div className="absolute inset-y-0 left-0 w-px -translate-x-1/2 bg-white/45">
           <span
             ref={thumb}
             role="slider"
@@ -233,22 +233,18 @@ function Compare({ before, after }: { before: string; after: string }) {
             aria-valuemax={100}
             aria-valuenow={50}
             onKeyDown={onKey}
-            className="clip-cut-sm pointer-events-auto absolute top-1/2 left-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center bg-accent-yellow text-bg-main outline-none focus-visible:ring-2 focus-visible:ring-white sm:size-14"
+            style={{
+              clipPath:
+                'polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px))',
+            }}
+            className="pointer-events-auto absolute top-1/2 left-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center border border-white/15 bg-bg-card/90 text-text-muted shadow-card outline-none transition-colors duration-200 hover:text-text-main focus-visible:bg-bg-card focus-visible:text-accent-yellow sm:size-10"
           >
             <ArrowsHorizontalIcon
               aria-hidden
               weight="bold"
-              className="size-5"
+              className="size-4"
             />
           </span>
-          <span
-            aria-hidden
-            className="absolute top-0 left-1/2 h-3 w-2 -translate-x-1/2 bg-accent-yellow"
-          />
-          <span
-            aria-hidden
-            className="absolute bottom-0 left-1/2 h-3 w-2 -translate-x-1/2 bg-accent-yellow"
-          />
         </div>
       </div>
     </div>
@@ -491,8 +487,8 @@ export function Works() {
         id="works"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон — карбонова сітка (bg-honeycomb) з м'яким переходом у сусідні розділи.
-            Без окремих контурів-шестикутників зверху: сітка й так задає фактуру */}
+        {/* Фон — технічна сітка-каркас (bg-honeycomb) з м'яким переходом
+            у сусідні розділи */}
         <div
           aria-hidden
           className="bg-honeycomb pointer-events-none absolute inset-0"
