@@ -12,8 +12,11 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   XIcon,
+  InstagramLogoIcon,
+  ArrowUpRightIcon,
 } from '@phosphor-icons/react';
 import { compare, gallery, worksIntro } from '../config/works';
+import { contacts } from '../config/site';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -89,14 +92,18 @@ function Compare({ before, after }: { before: string; after: string }) {
     const sweep = () => {
       const start = performance.now();
       const total = SEG_MS * (path.length - 1);
+
       const tick = (now: number) => {
         const elapsed = now - start;
         const segIdx = Math.min(path.length - 2, Math.floor(elapsed / SEG_MS));
         const t = Math.min(1, (elapsed - segIdx * SEG_MS) / SEG_MS);
         const eased = 1 - Math.pow(1 - t, 3);
+
         setPos(path[segIdx] + (path[segIdx + 1] - path[segIdx]) * eased);
+
         if (elapsed < total) requestAnimationFrame(tick);
       };
+
       requestAnimationFrame(tick);
     };
 
@@ -108,6 +115,7 @@ function Compare({ before, after }: { before: string; after: string }) {
       },
       { threshold: 0.5 },
     );
+
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -119,6 +127,7 @@ function Compare({ before, after }: { before: string; after: string }) {
 
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+
     rect.current = e.currentTarget.getBoundingClientRect();
     e.currentTarget.setPointerCapture(e.pointerId);
     fromPointer(e);
@@ -130,11 +139,13 @@ function Compare({ before, after }: { before: string; after: string }) {
 
   const onKey = (e: ReactKeyboardEvent<HTMLSpanElement>) => {
     const step = e.shiftKey ? 10 : 5;
+
     if (e.key === 'ArrowLeft') setPos(pos.current - step);
     else if (e.key === 'ArrowRight') setPos(pos.current + step);
     else if (e.key === 'Home') setPos(0);
     else if (e.key === 'End') setPos(100);
     else return;
+
     e.preventDefault();
   };
 
@@ -172,6 +183,7 @@ function Compare({ before, after }: { before: string; after: string }) {
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgb(7_7_10/0.45))]"
       />
+
       {BRACKETS.map((b) => (
         <span
           key={b}
@@ -220,16 +232,22 @@ function useCols() {
       : window.matchMedia('(min-width: 40rem)').matches
         ? 3
         : 2;
+
   const [n, setN] = useState(read);
+
   useEffect(() => {
     const queries = ['(min-width: 64rem)', '(min-width: 40rem)'].map((q) =>
       window.matchMedia(q),
     );
+
     const update = () => setN(read());
+
     queries.forEach((q) => q.addEventListener('change', update));
+
     return () =>
       queries.forEach((q) => q.removeEventListener('change', update));
   }, []);
+
   return n;
 }
 
@@ -243,11 +261,14 @@ function Honeycomb({
   const n = useCols();
 
   const rows: Array<{ odd: boolean; cells: Array<number | null> }> = [];
+
   for (let idx = 0, r = 0; idx < photos.length; r++) {
     const odd = r % 2 === 1;
     const cells: Array<number | null> = [];
+
     for (let k = 0; k < (odd ? n - 1 : n); k++)
       cells.push(idx < photos.length ? idx++ : null);
+
     rows.push({ odd, cells });
   }
 
@@ -292,10 +313,12 @@ function Honeycomb({
                       draggable={false}
                       className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                     />
+
                     <span
                       aria-hidden
                       className="pointer-events-none absolute inset-0 bg-linear-to-t from-bg-main/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                     />
+
                     <span
                       aria-hidden
                       className="pointer-events-none absolute inset-x-0 bottom-[16%] text-center font-mono text-xs font-bold tracking-[0.3em] text-accent-yellow opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -321,7 +344,9 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
   useEffect(() => {
     const d = dialog.current;
     const s = strip.current;
+
     if (!d || !s) return;
+
     d.showModal();
     s.scrollLeft = start * s.clientWidth;
     document.documentElement.style.overflow = 'hidden';
@@ -330,14 +355,18 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         const strp = strip.current;
         if (!strp) return;
+
         e.preventDefault();
+
         strp.scrollBy({
           left: (e.key === 'ArrowRight' ? 1 : -1) * strp.clientWidth,
           behavior: 'smooth',
         });
       }
     };
+
     document.addEventListener('keydown', onKey);
+
     return () => {
       document.documentElement.style.overflow = '';
       document.removeEventListener('keydown', onKey);
@@ -347,12 +376,14 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
   const onScroll = () => {
     const s = strip.current;
     if (!s || !counter.current) return;
+
     const i = Math.round(s.scrollLeft / s.clientWidth);
     counter.current.textContent = pad2(i + 1);
   };
 
   const go = (dir: 1 | -1) => {
     const s = strip.current;
+
     if (s) s.scrollBy({ left: dir * s.clientWidth, behavior: 'smooth' });
   };
 
@@ -412,6 +443,7 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
       >
         <CaretLeftIcon aria-hidden weight="bold" className="size-5" />
       </button>
+
       <button
         type="button"
         onClick={() => go(1)}
@@ -439,10 +471,12 @@ export function Works() {
           aria-hidden
           className="bg-honeycomb pointer-events-none absolute inset-0"
         />
+
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-bg-main via-bg-main/60 to-transparent"
         />
+
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-bg-main via-bg-main/60 to-transparent"
@@ -455,6 +489,7 @@ export function Works() {
           >
             Наші <span className="text-accent-yellow">роботи</span>
           </m.h2>
+
           <m.p
             {...reveal(0.1)}
             className="mt-4 max-w-md text-sm text-text-muted sm:text-base"
@@ -476,6 +511,27 @@ export function Works() {
               <Honeycomb photos={gallery} onOpen={setOpen} />
             </div>
           )}
+
+          <m.div
+            {...reveal(0.12)}
+            className="mt-12 flex justify-center sm:mt-16"
+          >
+            <a
+              href={contacts.instagram.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Більше робіт та відео в Instagram"
+              className="group clip-cut-sm inline-flex min-h-14 max-w-full items-center justify-center gap-3 border border-border-strong px-6 py-4 text-base font-semibold text-text-main transition-colors duration-300 hover:border-accent-yellow hover:text-accent-yellow focus-visible:border-accent-yellow focus-visible:text-accent-yellow focus-visible:outline-none sm:min-h-16 sm:gap-4 sm:px-10 sm:py-5"
+            >
+              <span className="text-balance">Більше робіт та відео</span>
+
+              <InstagramLogoIcon
+                aria-hidden
+                weight="bold"
+                className="size-6 shrink-0 text-accent-yellow transition-transform duration-300 group-hover:scale-110"
+              />
+            </a>
+          </m.div>
         </div>
 
         {open !== null && (

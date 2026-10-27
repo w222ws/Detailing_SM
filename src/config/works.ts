@@ -4,7 +4,7 @@ export type ComparePair = {
 };
 
 export const worksIntro =
-  'Один дотик повзунка показує, що було і що стало. Нижче — решта робіт з останніх виїздів.';
+  'Один дотик повзунка показує, що було і що стало. Нижче — решта робіт з останніх виконаних послуг.';
 
 const files = import.meta.glob<string>(
   '../assets/works/*.{avif,webp,jpg,jpeg,png}',

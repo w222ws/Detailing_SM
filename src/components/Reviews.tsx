@@ -190,8 +190,8 @@ export function Reviews() {
               {...reveal(0.06)}
               className="mt-4 max-w-sm text-sm text-text-muted sm:text-base"
             >
-              Що пишуть власники авто, яким ми робили роботу — на нашій сторінці
-              в Google.
+              Дізнайтеся відгуки автовласників, які вже оцінили результат нашої
+              роботи
             </m.p>
           </div>
 

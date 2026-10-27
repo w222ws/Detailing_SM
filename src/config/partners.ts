@@ -20,8 +20,8 @@ const certEntry = entries.find((e) => /cert|sert/i.test(e.name));
 export const certificate: string | null = certEntry?.url ?? null;
 
 export const certificateInfo = {
-  title: 'Сертифікати майстра',
-  note: 'Акредитація Gtechniq та Ultimate Car Care',
+  title: 'Сертифікати студії',
+  note: 'Акредитація від Gtechniq та Ultimate Car Care',
 } as const;
 
 const titleCase = (s: string) =>
