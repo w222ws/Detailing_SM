@@ -4,31 +4,6 @@ import { StarIcon } from '@phosphor-icons/react';
 import { reviews, type Review } from '../config/reviews';
 import { locations } from '../config/locations';
 
-/* ==========================================================================
-   #reviews — «Відгуки клієнтів»: стопка карток, яку гортаєш пальцем.
-   • Свайп вліво/вправо — верхня картка відлітає й лягає в низ стопки;
-     тап по картці — те саме; на компі ще й стрілки клавіатури.
-     Що їх кілька — видно по картках віялом ззаду, без підказок текстом.
-   • Картка темна, строга: 5 зірок, текст, ім'я окремим рядком. Без лапок,
-     без аватарок, без іконок, без жовтих ліній у підписі — все, що
-     робило розділ схожим на шаблон, прибрано.
-   • Шрифт імені — той самий Sofia Sans Extra Condensed, що й у заголовках
-     секцій (а не моношрифт-метка): це не підпис-штамп, це людина, яка
-     лишила відгук.
-   • Під стопкою на компі — темна «плита» під усю ширину карток, яка не
-     підсвічує стопку, а гасить тло навколо: соти залишаються, але не
-     грають під карткою. Легше читається текст, акуратніше межа розділу.
-   • Текст не обрізається: висоту стопці задає невидима копія найдовшого
-     відгуку, тож усі картки вміщують свій текст повністю.
-   • Механіка: позиція під час перетягування пишеться прямо в DOM, без
-     React-стану, тому не лагає. Вертикальний свайп не перехоплюється —
-     сторінка скролиться як завжди.
-   • Під заголовком — заклик залишити свій відгук: кнопка на кожну
-     студію, веде одразу на Google-форму.
-   Фон — технічна сітка-каркас (bg-honeycomb), як просив клієнт.
-   Дані — з config/reviews.ts і config/locations.ts.
-   ========================================================================== */
-
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const cx = (...parts: Array<string | false | null | undefined>) =>
@@ -41,7 +16,6 @@ const reveal = (delay = 0) => ({
   transition: { duration: 0.7, delay, ease: EASE },
 });
 
-/* Як лежать картки у стопці: верхня рівно, нижні — віялом */
 const REST = [
   'translate3d(0,0,0) rotate(0deg)',
   'translate3d(0,14px,0) rotate(-3deg) scale(0.955)',
@@ -49,14 +23,11 @@ const REST = [
 ];
 const REST_HIDDEN = 'translate3d(0,28px,0) scale(0.91)';
 
-/* Найдовший відгук — задає висоту стопки */
 const LONGEST = reviews.reduce<Review | undefined>(
   (a, r) => (!a || r.text.length > a.text.length ? r : a),
   undefined,
 );
 
-/* «м. Дніпро, вул. Петра Бикова, 16» → «вул. Петра Бикова, 16»:
-   місто однакове в обох студій, на кнопці воно лише заважає */
 const street = (address: string) => {
   const parts = address.split(', ');
   return parts.length > 1 && /^м\.\s/.test(parts[0])
@@ -120,7 +91,6 @@ export function Reviews() {
   const topCard = () =>
     stack.current?.querySelector<HTMLElement>('[data-pos="0"]') ?? null;
 
-  /* Верхня картка відлітає вбік і лягає в низ стопки */
   const fly = (dir: 1 | -1) => {
     const card = topCard();
     if (!card || busy.current) return;
@@ -164,7 +134,6 @@ export function Reviews() {
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
     if (!s.active) {
-      /* Поки рух радше вертикальний — не перехоплюємо, хай скролиться сторінка */
       if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(dy)) return;
       s.active = true;
       stack.current?.setPointerCapture(e.pointerId);
@@ -179,7 +148,7 @@ export function Reviews() {
     drag.current = null;
     if (!s) return;
     const speed = Math.abs(s.dx) / Math.max(1, Date.now() - s.t);
-    if (!s.active) fly(-1); /* тап по картці = наступна */
+    if (!s.active) fly(-1);
     else if (Math.abs(s.dx) > 70 || speed > 0.5) fly(s.dx > 0 ? 1 : -1);
     else back();
   };
@@ -200,8 +169,6 @@ export function Reviews() {
         id="reviews"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон: технічна сітка-каркас (bg-honeycomb) + плавний перехід
-            у сусідні розділи */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
@@ -212,7 +179,6 @@ export function Reviews() {
         </div>
 
         <div className="container-site relative grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:grid-rows-[auto_1fr] lg:gap-x-16 xl:gap-x-24">
-          {/* Заголовок */}
           <div className="lg:col-start-1 lg:row-start-1">
             <m.h2
               {...reveal()}
@@ -229,7 +195,6 @@ export function Reviews() {
             </m.p>
           </div>
 
-          {/* Стопка карток + темна «плита» під неї (гасить соти, не підсвічує) */}
           <m.div
             {...reveal(0.1)}
             className="relative self-center lg:col-start-2 lg:row-span-2 lg:row-start-1"
@@ -251,7 +216,6 @@ export function Reviews() {
               onPointerCancel={onCancel}
               className="relative mx-auto w-full max-w-xl cursor-grab select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-yellow active:cursor-grabbing"
             >
-              {/* Невидима копія найдовшого відгуку — задає висоту стопки */}
               {LONGEST && (
                 <div aria-hidden className="invisible pb-8">
                   <Card review={LONGEST} />
@@ -278,7 +242,6 @@ export function Reviews() {
             </div>
           </m.div>
 
-          {/* Залишити свій відгук */}
           <m.div
             {...reveal(0.16)}
             className="lg:col-start-1 lg:row-start-2 lg:self-end"

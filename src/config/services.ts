@@ -1,14 +1,13 @@
 export interface Service {
   id: string;
   title: string;
-  /** Короткий рядок під назвою — що саме робимо */
   summary: string;
   currency: 'UAH' | 'USD';
-  /** Відсутня, якщо individual: true */
+
   priceFrom?: number;
-  /** Ціну не називаємо наперед — лише після огляду */
+
   individual?: boolean;
-  /** Найчастіше беруть разом із покриттям — позначаємо окремо */
+
   featured?: boolean;
 }
 

@@ -3,29 +3,6 @@ import { domAnimation, LazyMotion, m } from 'motion/react';
 import { MagnifyingGlassPlusIcon, XIcon } from '@phosphor-icons/react';
 import { certificate, certificateInfo, partners } from '../config/partners';
 
-/* ==========================================================================
-   #partners — «Партнери та сертифікація».
-
-   • Ліворуч — заголовок і «стіна» лого: панель, поділена тонкими лініями
-     на рівні клітинки (gap-px на тлі кольору рамки). Кожне лого — у
-     власній клітинці, повністю видно, нічого не обрізано краєм екрана,
-     як було зі стрічкою на телефоні.
-     Колонки підбираються під кількість лого (gridFor нижче), щоб сітка
-     завжди закривалась рівно: 4 → 2×2, 6 → 3×2, непарна кількість —
-     останню клітинку займає примітка про повний пакет сертифікатів.
-     Порожніх клітинок не буває ні на телефоні, ні на компі.
-     Лого вирівняні за площею (PartnerLogo), а не за висотою.
-   • Праворуч — фото сертифікатів як ДОКУМЕНТ: портретне 3:4. Під ним —
-     що саме на фото (config/partners.ts → certificateInfo). На телефоні —
-     компактний рядок «мініатюра + підпис», щоб не займати пів екрана.
-     Клік — на весь екран (нативний <dialog>).
-   • Фон — дві повернуті clip-cut панелі на hairline-рамках і жовта смуга,
-     статично. Та сама мова абстрактних фігур, що й у FAQ.
-
-   Дані — з config/partners.ts (лого й сертифікат підтягуються з папки
-   assets/partners автоматично); розділ ховається, якщо файлів нема.
-   ========================================================================== */
-
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const cx = (...parts: Array<string | false | null | undefined>) =>
@@ -38,11 +15,6 @@ const reveal = (delay = 0) => ({
   transition: { duration: 0.7, delay, ease: EASE },
 });
 
-/* Сітка лого без порожніх клітинок за будь-якої кількості:
-   • ділиться на 6 → 2 колонки на телефоні, 3 на компі;
-   • +1 ділиться на 6 → те саме, а останню клітинку займає примітка;
-   • парна → 2 колонки скрізь (4 → 2×2);
-   • непарна → 2 колонки + примітка в останній клітинці. */
 function gridFor(n: number) {
   if (n % 6 === 0) return { cols: 'grid-cols-2 sm:grid-cols-3', note: false };
   if ((n + 1) % 6 === 0)
@@ -53,10 +25,6 @@ function gridFor(n: number) {
 const GRID = gridFor(partners.length);
 const NOTE = 'Повний пакет сертифікатів покажемо в студії';
 
-/* Лого з оптичним вирівнюванням: розмір рахується від ПЛОЩІ, а не від
-   висоти. Однакова висота робить довгі лого (ULTIMATE, CLIF) у кілька
-   разів «важчими» за компактні (G-TECH); однакова площа — рівними на око.
-   Ширина = √(ширина/висота) × 4em; em задає клітинка (13px → 22px). */
 function PartnerLogo({ src, name }: { src: string; name: string }) {
   const [ratio, setRatio] = useState<number | null>(null);
   return (
@@ -81,7 +49,6 @@ function PartnerLogo({ src, name }: { src: string; name: string }) {
   );
 }
 
-/* Сертифікат на весь екран — нативний <dialog>, Esc/клік повз закриває */
 function CertificateLightbox({
   src,
   onClose,
@@ -138,7 +105,6 @@ export function Partners() {
         id="partners"
         className="relative overflow-hidden bg-bg-main py-16 sm:py-20 lg:py-28"
       >
-        {/* Фон — статичні абстрактні фігури */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
@@ -203,7 +169,6 @@ export function Partners() {
               )}
             </div>
 
-            {/* Праворуч: сертифікат-документ */}
             {certificate && (
               <m.button
                 {...reveal(0.2)}

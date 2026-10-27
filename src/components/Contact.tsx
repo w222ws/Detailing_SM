@@ -20,18 +20,6 @@ import { locations } from '../config/locations';
 import { contactSection, developer } from '../config/contact';
 import logoImg from '../assets/logo.avif';
 
-/* ==========================================================================
-   #contacts — він же футер: проста кнопка дзвінка, рядок розділів,
-   лого, месенджери, студії та графік, права.
-   Статичний (без анімацій). Фон bg-bg-elevated збігається з фоном лого.
-
-   Розділи стоять ОДНИМ РЯДКОМ, а не колонкою: шість пунктів стовпчиком
-   розтягували футер і лишали півекрана порожнечі праворуч.
-   Месенджери — назвою, а не сирим номером: номер і так величезний
-   у кнопці зверху, а «+380973624845» у списку читалось як сміття.
-   Усе з config: site.ts, locations.ts, contact.ts.
-   ========================================================================== */
-
 const ICONS: Record<string, React.ComponentType<IconProps>> = {
   TelegramLogo: TelegramLogoIcon,
   InstagramLogo: InstagramLogoIcon,
@@ -51,7 +39,6 @@ const LINK =
 
 const year = new Date().getFullYear();
 
-/** Копіювання з запасним варіантом для старих браузерів / http */
 async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -73,9 +60,6 @@ async function copyText(text: string): Promise<boolean> {
     }
   }
 }
-
-/** Комп'ютер = широкий екран + мишка/трекпад + не телефон і не планшет.
-    Усе інше (телефон, планшет, iPad із клавіатурою) — звичайний дзвінок. */
 const DESKTOP_MQ = '(min-width: 64rem) and (hover: hover) and (pointer: fine)';
 
 const isDesktop = () => {
@@ -103,7 +87,6 @@ export default function Contact() {
     };
   }, []);
 
-  /* Телефон: на смартфоні — дзвінок, на комп'ютері — копіюємо номер */
   const onPhoneClick = async (e: MouseEvent<HTMLAnchorElement>) => {
     if (!desktop) return;
     e.preventDefault();
@@ -119,14 +102,12 @@ export default function Contact() {
       id="contacts"
       className="relative overflow-hidden border-t border-border-subtle bg-bg-elevated text-text-main"
     >
-      {/* Тонка жовта лінія-акцент зверху */}
       <div
         aria-hidden
         className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-yellow/60 to-transparent"
       />
 
       <div className="container-site pt-8 sm:pt-12">
-        {/* Телефон великою кнопкою */}
         <a
           href={phone.href}
           onClick={onPhoneClick}
@@ -148,7 +129,6 @@ export default function Contact() {
           </span>
         </a>
 
-        {/* Розділи — одним рядком */}
         <nav
           aria-label={contactSection.navLabel}
           className="mt-6 flex flex-wrap items-center gap-x-7 gap-y-1 border-b border-border-subtle pb-5 sm:mt-0 sm:gap-x-9"
@@ -165,7 +145,6 @@ export default function Contact() {
         </nav>
 
         <div className="mt-8 grid gap-8 sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-[1fr_1fr_1.3fr] lg:gap-12">
-          {/* Лого + «нагору» */}
           <div className="flex items-center justify-between gap-4 sm:col-span-2 lg:col-span-1 lg:justify-start lg:gap-8">
             <a
               href="#"
@@ -191,7 +170,6 @@ export default function Contact() {
             </button>
           </div>
 
-          {/* Месенджери */}
           <div>
             <p className={HEADING}>{contactSection.messengersLabel}</p>
             <ul className="mt-1">
@@ -237,7 +215,6 @@ export default function Contact() {
             </ul>
           </div>
 
-          {/* Студії та графік */}
           <div>
             <p className={HEADING}>{contactSection.whereLabel}</p>
             <ul className="mt-1 text-text-muted">
@@ -270,7 +247,6 @@ export default function Contact() {
           </div>
         </div>
 
-        {/* Права + розробник */}
         <div className="mt-8 flex flex-col gap-1.5 border-t border-border-subtle py-4 font-mono text-[0.65rem] tracking-widest text-text-dim uppercase sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {brand.since}–{year} {brand.name}. {contactSection.rights}

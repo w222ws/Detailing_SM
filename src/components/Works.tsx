@@ -15,20 +15,6 @@ import {
 } from '@phosphor-icons/react';
 import { compare, gallery, worksIntro } from '../config/works';
 
-/* ==========================================================================
-   #works — «Наші роботи». Два блоки: повзунок ДО/ПІСЛЯ + галерея-соти.
-   • Повзунок — transform-only, без лагів (див. Compare).
-   • Галерея — справжні стільники (Honeycomb): фото в шестикутниках, ряди
-     вкладаються одне в одне (--n/--w рахує CSS, React лише каже скільки
-     плиток у ряду). Порожні «хвостові» комірки — тонкий контур-декор.
-     Ніякого скла, градієнтів чи нескінченних анімацій: обідок — простий
-     колір (transition лише background-color), на hover — масштаб фото
-     й жовтий обідок. Це і було джерелом лагів раніше, тепер прибрано.
-   Клік по плитці — лайтбокс на весь екран: свайп на телефоні, ←/→/Esc на
-   десктопі, лічильник 03/08.
-   Фото беруться з config/works.ts (src/assets/works/).
-   ========================================================================== */
-
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const cx = (...parts: Array<string | false | undefined>) =>
@@ -43,9 +29,6 @@ const reveal = (delay = 0) => ({
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-/* Декоративний контур шестикутника для фону розділу: тонка лінія, що
-   не блимає й не гальмує (SVG, non-scaling-stroke). Клас керує розміром
-   і кольором через currentColor. */
 function HexOutline({ className }: { className?: string }) {
   return (
     <svg
@@ -65,17 +48,6 @@ function HexOutline({ className }: { className?: string }) {
   );
 }
 
-/* -------------------- COMPARE: «ДО / ПІСЛЯ» --------------------
-   Швидкий повзунок: жодного React-стану, жодного clip-path / left / width.
-   Позиція (--pos) пишеться в DOM раз на кадр (rAF), а рухаються лише два
-   шари через transform — це робить відеокарта, фото не перемальовується.
-   • шар «ДО» — контейнер overflow-hidden, зсунутий на (pos − 100%),
-     а фото всередині зсунуте в протилежний бік → фото стоїть на місці,
-     відкривається лише «вікно»;
-   • лінія з шильдиком — зсув на pos.
-   Керування: палець/миша по всій картці (клік — стрибок лінії), Pointer
-   Events + pointer capture; вертикальний свайп лишається скролом сторінки.
-   З клавіатури: ← → (±5), Home / End. */
 const BRACKETS = [
   'top-4 left-4 border-t-2 border-l-2',
   'top-4 right-4 border-t-2 border-r-2',
@@ -106,12 +78,6 @@ function Compare({ before, after }: { before: string; after: string }) {
     if (!frame.current) frame.current = requestAnimationFrame(paint);
   };
 
-  /* Разова «демонстрація» повзунка: щойно картка вперше попадає в
-     кадр — лінія сама проходить вліво-вправо й вертається на середину.
-     Не хитрість заради хитрості: людина одразу розуміє, що це можна
-     тягнути рукою, замість того щоб здогадуватись. Один раз за сесію,
-     через IntersectionObserver (не scroll-слухач), і той самий rAF-шлях
-     запису в --pos, що й ручне перетягування — нічого додатково важкого. */
   useEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -144,7 +110,6 @@ function Compare({ before, after }: { before: string; after: string }) {
     );
     io.observe(el);
     return () => io.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fromPointer = (e: PointerEvent<HTMLDivElement>) => {
@@ -189,7 +154,6 @@ function Compare({ before, after }: { before: string; after: string }) {
         className="pointer-events-none absolute inset-0 size-full object-cover"
       />
 
-      {/* Шар «ДО»: вікно їде вправо-вліво, фото всередині їде навпаки */}
       <div
         aria-hidden
         className="cmp-window pointer-events-none absolute inset-0 overflow-hidden"
@@ -204,7 +168,6 @@ function Compare({ before, after }: { before: string; after: string }) {
         />
       </div>
 
-      {/* Легка віньєтка для читабельності шильдика + «візир» по кутах кадру */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgb(7_7_10/0.45))]"
@@ -220,7 +183,6 @@ function Compare({ before, after }: { before: string; after: string }) {
         />
       ))}
 
-      {/* Лінія + шильдик — графітові, щоб не перебивати саме фото */}
       <div className="cmp-line pointer-events-none absolute inset-0">
         <div className="absolute inset-y-0 left-0 w-px -translate-x-1/2 bg-white/45">
           <span
@@ -251,15 +213,6 @@ function Compare({ before, after }: { before: string; after: string }) {
   );
 }
 
-/* -------------------- HONEYCOMB: галерея-соти --------------------
-   Справжня стільникова кладка: ряди по --n / --n−1 плиток, вкладені одне
-   в одне (geometry в index.css: hex-comb/hex-row/hex-cell). React лише
-   рахує, скільки плиток у довгому ряду (телефон 2, планшет 3, десктоп 5)
-   і розкладає фото по рядах; «хвіст» останнього ряду — порожня комірка-
-   контур (HexOutline). Плитка — два clip-hex
-   шари (обідок-колір + фото з відступом 3px), на hover/focus обідок стає
-   жовтим і фото трохи масштабується — дві дешеві transform/color
-   властивості, без скла, градієнтів і нескінченних анімацій. */
 function useCols() {
   const read = () =>
     window.matchMedia('(min-width: 64rem)').matches
@@ -289,7 +242,6 @@ function Honeycomb({
 }) {
   const n = useCols();
 
-  /* Ряди: n, n−1, n, n−1 … Хвіст останнього ряду — порожній контур */
   const rows: Array<{ odd: boolean; cells: Array<number | null> }> = [];
   for (let idx = 0, r = 0; idx < photos.length; r++) {
     const odd = r % 2 === 1;
@@ -361,7 +313,6 @@ function Honeycomb({
   );
 }
 
-/* -------------------- LIGHTBOX: нативний <dialog> + клавіатура + свайп -------------------- */
 function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const strip = useRef<HTMLDivElement>(null);
@@ -375,7 +326,6 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
     s.scrollLeft = start * s.clientWidth;
     document.documentElement.style.overflow = 'hidden';
 
-    /* Клавіатура: ←/→ — гортаємо, Esc уже обробляє <dialog> */
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         const strp = strip.current;
@@ -425,7 +375,6 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
             onClick={(e) => e.target === e.currentTarget && onClose()}
             className="grid size-full shrink-0 snap-center place-items-center px-3 py-14 sm:px-16"
           >
-            {/* Фіксована рамка 4:3 — усі фото показуємо однаково, однакова висота на будь-якому екрані */}
             <div className="clip-cut-sm relative aspect-[4/3] w-full max-w-5xl overflow-hidden bg-bg-elevated">
               <img
                 src={src}
@@ -475,7 +424,6 @@ function Lightbox({ start, onClose }: { start: number; onClose: () => void }) {
   );
 }
 
-/* -------------------- SECTION -------------------- */
 export function Works() {
   const [open, setOpen] = useState<number | null>(null);
 
@@ -487,8 +435,6 @@ export function Works() {
         id="works"
         className="relative overflow-hidden bg-bg-main py-20 sm:py-24 lg:py-32"
       >
-        {/* Фон — технічна сітка-каркас (bg-honeycomb) з м'яким переходом
-            у сусідні розділи */}
         <div
           aria-hidden
           className="bg-honeycomb pointer-events-none absolute inset-0"

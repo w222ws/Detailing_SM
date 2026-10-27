@@ -1,17 +1,5 @@
-/**
- * ЛОКАЦІЇ — адреси студій Detailing SM.
- * Джерело правди для кнопок «залишити відгук» (розділ #reviews),
- * а далі — для #contacts і футера.
- *
- * TODO: підставити реальні адреси та посилання.
- * • mapUrl — картка студії в Google Maps.
- * • reviewUrl — пряме посилання на форму відгуку цієї студії:
- *   https://search.google.com/local/writereview?placeid=<PLACE_ID>
- */
-
 export interface Location {
   id: string;
-  /** Повна адреса студії — показується як є, одним рядком */
   address: string;
   mapUrl: string;
   reviewUrl: string;

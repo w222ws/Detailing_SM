@@ -1,9 +1,3 @@
-/**
- * ВІДГУКИ — розділ #reviews.
- * Усі відгуки — зібрані з Google-сторінки студії. Поле `source` керує
- * бейджем у кутку картки.
- */
-
 export interface Review {
   id: string;
   name: string;

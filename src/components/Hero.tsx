@@ -3,8 +3,6 @@ import { site } from '../config/site';
 import { hero } from '../config/hero';
 import heroPhoto from '../assets/hero-bg.avif';
 
-/* Головний екран. Тексти — у config/hero.ts. */
-
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 function HeroPhoto() {
@@ -15,7 +13,6 @@ function HeroPhoto() {
       transition={{ duration: 1, ease: EASE_OUT_EXPO, delay: 0.1 }}
       className="relative"
     >
-      {/* Гойдання — чистий CSS, transform на композиторі */}
       <div className="animate-(--animate-hero-sway) will-change-transform motion-reduce:animate-none">
         <div className="shine clip-cut relative aspect-[4/5] w-full overflow-hidden border border-border-subtle bg-carbon">
           <img
@@ -43,7 +40,6 @@ function Hero() {
         id="hero"
         className="relative flex w-full items-center overflow-hidden pt-24 pb-16 min-h-[88vh] lg:min-h-[92vh] lg:pt-32 lg:pb-24"
       >
-        {/* Фон: точки, соти, затемнення, перехід у чорне внизу */}
         <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
           <div className="bg-grain absolute inset-0" />
           <div className="bg-honeycomb absolute inset-0" />
@@ -53,7 +49,6 @@ function Hero() {
 
         <div className="container-site relative z-10 w-full">
           <div className="flex flex-col gap-10 lg:grid lg:grid-cols-12 lg:items-center lg:gap-12">
-            {/* Текст: на мобілі порядок задають contents + order */}
             <div className="contents text-center lg:col-span-7 lg:block">
               <h1 className="order-1 font-display text-[3.1rem] leading-[0.95] text-text-main uppercase sm:text-7xl md:text-8xl lg:text-[6rem]">
                 {hero.headline.map((line, li) => (
@@ -107,7 +102,6 @@ function Hero() {
               </div>
             </div>
 
-            {/* Фото — на мобілі між заголовком і абзацом */}
             <div className="relative order-2 mx-auto w-full max-w-[19rem] lg:col-span-5 lg:mx-0 lg:ml-auto lg:max-w-sm">
               <span
                 aria-hidden

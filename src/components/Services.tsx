@@ -2,24 +2,6 @@ import { useRef, type ReactNode } from 'react';
 import { domAnimation, LazyMotion, m, useInView } from 'motion/react';
 import { priceDisclaimer, services, type Service } from '../config/services';
 
-/* ==========================================================================
-   #services — прайс-лист: назва, короткий опис, ціна.
-   • Ліворуч — мононумерація 01…08 на звичайних рядках, задає ритм,
-     читається як каталог. На featured-картці її немає — там уже є власний
-     тег, другий покажчик лише б плутав.
-   • Featured-рядок розгортається у «вітринну» картку: фірмовий жовтий
-     зліва, легка підсвітка, причеплений жетон з ПРИЧИНОЮ вибору (а не
-     словом «популярне» — воно саме по собі нічого не пояснює), ціна
-     більша.
-   • Поки гортаєш список — рядок у фокусі (ближче до центру екрана)
-     яскравий, решта притлумлені. Працює в обидва боки: вгору й вниз.
-     Лише opacity/transform через IntersectionObserver (useInView) —
-     без scroll-слухача й без filter/blur, тому без лагів.
-   • Фон — контури шестикутників і зрізаних панелей під різними кутами,
-     жовті акценти в кутах. Без фільтрів і blur → без лагів.
-   • Один оркестрований вхід: заголовок і рядки проявляються по черзі.
-   ========================================================================== */
-
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 function formatPrice(service: Service) {
@@ -34,7 +16,6 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 const cx = (...parts: Array<string | false | undefined>) =>
   parts.filter(Boolean).join(' ');
 
-/** Слово виїжджає з-під маски знизу — один раз при вході секції в екран */
 function Word({
   children,
   index,
@@ -59,7 +40,6 @@ function Word({
   );
 }
 
-/** Контур шестикутника — декоративний елемент для фону */
 function HexOutline({ className }: { className?: string }) {
   return (
     <svg
@@ -79,17 +59,6 @@ function HexOutline({ className }: { className?: string }) {
   );
 }
 
-/**
- * Фокус-смуга в три щаблі, не два — щоб затемнення читалось як
- *«відходить углиб темряви», а не просто блимало туди-сюди:
- *  • focus  — рядок у вузькій смузі посередині екрана: повна яскравість;
- *  • nearby — ще в межах екрана, але не в фокусі: напівтінь;
- *  • інакше — рядок пішов на пару позицій вище чи ще далеко знизу:
- *    майже чорний, зливається з фоном.
- * Обидва пороги — окремі IntersectionObserver через useInView, без
- * жодного onScroll і без filter — тільки opacity/transform, тому
- * плавно й без лагів навіть на слабкому телефоні.
- */
 function useFocusDim(ref: React.RefObject<HTMLElement | null>) {
   const focus = useInView(ref, { margin: '-36% 0px -50% 0px' });
   const nearby = useInView(ref, { margin: '-6% 0px -12% 0px' });
@@ -104,7 +73,6 @@ const DIM_STYLE = {
   far: { opacity: 0.04, transform: 'translateY(-6px) scale(0.95)' },
 } as const;
 
-/** Один рядок прайсу. Для featured — повноцінна «вітринна» картка. */
 function ServiceRow({ service, index }: { service: Service; index: number }) {
   const price = formatPrice(service);
   const num = pad2(index + 1);
@@ -125,7 +93,6 @@ function ServiceRow({ service, index }: { service: Service; index: number }) {
           transition={{ duration: 0.65, delay: index * 0.05, ease: EASE }}
           className="relative"
         >
-          {/* Жовтий бар зліва + м'яке світло всередині картки */}
           <div className="clip-cut-sm relative overflow-hidden border border-accent-yellow/35 bg-bg-elevated p-5 pt-8 sm:p-7 sm:pt-9">
             <span
               aria-hidden
@@ -136,16 +103,6 @@ function ServiceRow({ service, index }: { service: Service; index: number }) {
               className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-accent-yellow/8"
             />
 
-            {/*
-              Жетон на верхньому краю картки. right-[0.75rem] — рівно
-              стільки ж, скільки зрізано в куті самої картки (clip-cut-sm
-              ріже кут на 0.75rem), тому правий край жетона впирається
-              точно в те місце, де прямий край картки закінчується і
-              починається її власний зріз — без накладання одне на одне.
-              Власний зріз жетона — лише на лівому нижньому куті, тим
-              самим кутом 0.75rem → той самий «почерк», що в картки,
-              тільки дзеркально. ХОЧЕШ ЗМІНИТИ ТЕКСТ — він просто тут,
-              рядком нижче. */}
             <span
               style={{
                 clipPath:
@@ -232,7 +189,6 @@ function Services() {
         id="services"
         className="relative overflow-hidden bg-bg-main py-16 sm:py-20 lg:py-28"
       >
-        {/* Фон: контури зрізаних панелей + шестикутники під кутами */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 select-none"
@@ -246,7 +202,6 @@ function Services() {
           <HexOutline className="absolute bottom-20 left-[38%] hidden size-24 rotate-[18deg] text-accent-yellow/10 lg:block" />
           <HexOutline className="absolute top-[30%] right-[42%] hidden size-20 -rotate-[14deg] text-border-subtle/50 lg:block" />
 
-          {/* Жовта «пил-смуга» зліва вгорі */}
           <div className="absolute top-24 left-0 h-px w-24 bg-linear-to-r from-accent-yellow/50 to-transparent sm:w-40" />
           <div className="absolute right-0 bottom-32 h-px w-24 bg-linear-to-l from-accent-yellow/40 to-transparent sm:w-40" />
         </div>
