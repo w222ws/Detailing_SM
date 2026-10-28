@@ -19,3 +19,4 @@ export const locations: Location[] = [
     reviewUrl: 'https://g.page/r/CUBq-ThwkJYDEAE/review',
   },
 ];
+// комм
